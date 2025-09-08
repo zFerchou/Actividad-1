@@ -5,6 +5,7 @@
   <title>Gestión de Usuarios</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* Estilos resumidos, igual que antes */
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
     body { margin: 0; background: #f6f7fb; color: #222; }
     header { padding: 1rem 1.25rem; background: #111827; color: #fff; }
@@ -38,7 +39,6 @@
   </header>
 
   <main class="grid">
-    <!-- Lista de usuarios -->
     <section class="card">
       <div class="controls">
         <button id="btnRecargar">Recargar lista</button>
@@ -59,24 +59,13 @@
       </table>
     </section>
 
-    <!-- Registro de usuario -->
     <aside class="card">
       <h2>Nuevo usuario</h2>
       <form id="formNuevo" autocomplete="off">
-        <div class="field">
-          <label for="nombre">Nombre</label>
-          <input id="nombre" name="nombre" required maxlength="100" />
-        </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required maxlength="150" />
-        </div>
-        <div class="field">
-          <label for="password">Contraseña</label>
-          <input id="password" name="password" type="password" required minlength="6" maxlength="255" />
-        </div>
-        <div class="field">
-          <label for="rol">Rol</label>
+        <div class="field"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required maxlength="100" /></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required maxlength="150" /></div>
+        <div class="field"><label for="password">Contraseña</label><input id="password" name="password" type="password" required minlength="6" maxlength="255" /></div>
+        <div class="field"><label for="rol">Rol</label>
           <select id="rol" name="rol" required>
             <option value="">— Selecciona —</option>
             <option value="admin">admin</option>
@@ -111,25 +100,23 @@
       setState('Cargando usuarios…');
       tbody.innerHTML = '<tr><td colspan="4" class="muted">Cargando…</td></tr>';
       try {
-        const res = await fetch('/usuarios', { headers: { 'Accept': 'application/json' } });
+        const res = await fetch('/usuarios');
         if (!res.ok) throw new Error('Error al obtener usuarios (' + res.status + ')');
-        const data = await res.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
+        const usuarios = await res.json();
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
           tbody.innerHTML = '<tr><td colspan="4" class="muted">No hay usuarios aún.</td></tr>';
           setState('Listo (0 usuarios).');
           return;
         }
-
-        tbody.innerHTML = data.map(u => `
+        tbody.innerHTML = usuarios.map(u => `
           <tr>
-            <td>${escapeHTML(u.id)}</td>
-            <td>${escapeHTML(u.nombre)}</td>
-            <td>${escapeHTML(u.email)}</td>
-            <td><span class="badge">${escapeHTML(u.rol)}</span></td>
+            <td>${u.id}</td>
+            <td>${u.nombre}</td>
+            <td>${u.email}</td>
+            <td><span class="badge">${u.rol}</span></td>
           </tr>
         `).join('');
-        setState('Listo (' + data.length + ' usuarios).');
+        setState(`Listo (${usuarios.length} usuarios).`);
       } catch (err) {
         console.error(err);
         tbody.innerHTML = '<tr><td colspan="4" class="muted">No se pudo cargar la lista.</td></tr>';
@@ -137,50 +124,27 @@
       }
     }
 
-    function setState(text) {
-      state.textContent = text;
-    }
-
-    function escapeHTML(v) {
-      return String(v ?? '').replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-      }[m]));
-    }
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       formMsg.textContent = '';
       formMsg.className = 'msg';
+      btnCrear.disabled = true;
+      btnCrear.textContent = 'Creando…';
 
       const nombre = $('#nombre').value.trim();
       const email = $('#email').value.trim();
       const password = $('#password').value;
       const rol = $('#rol').value;
 
-      if (!nombre || !email || !password || !rol) {
-        formMsg.textContent = 'Completa todos los campos.';
-        formMsg.classList.add('err');
-        return;
-      }
-
-      btnCrear.disabled = true;
-      btnCrear.textContent = 'Creando…';
-
       try {
         const res = await fetch('/usuarios/nuevo', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nombre, email, password, rol })
         });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt || 'Error al crear usuario');
-        }
-
-        const data = await res.json();
-        // Sequelize responde con { mensaje: "...", usuario: {...} }
-        const creado = data.usuario;
-        formMsg.textContent = `✅ Usuario creado: ${creado.nombre} (${creado.email})`;
+        if (!res.ok) throw new Error(await res.text());
+        const usuario = await res.json();
+        formMsg.textContent = `✅ Usuario creado: ${usuario.nombre} (${usuario.email})`;
         formMsg.classList.add('ok');
         form.reset();
         await cargarUsuarios();
@@ -198,6 +162,8 @@
 
     btnRecargar.addEventListener('click', cargarUsuarios);
     window.addEventListener('DOMContentLoaded', cargarUsuarios);
+
+    function setState(text) { state.textContent = text; }
   </script>
 </body>
 </html>

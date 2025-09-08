@@ -1,6 +1,5 @@
 const Usuario = require('../models/Usuario');
 
-<<<<<<< HEAD
 exports.listar = async (req, res) => {
   try {
     const usuarios = await Usuario.obtenerTodos();
@@ -19,7 +18,7 @@ exports.nuevo = async (req, res) => {
     res.status(500).send(err.message);
   }
 };
-=======
+
 const listarUsuarios = async (req, res) => {
   try {
     const usuarios = await Usuario.findAll();
@@ -40,4 +39,4 @@ const crearUsuario = async (req, res) => {
 };
 
 module.exports = { listarUsuarios, crearUsuario };
->>>>>>> 358ad3ceb5687a92fb6e698611069d1a0a10c14b
+
