@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const { Pool } = require('pg');
 const config = require('../config');
 
@@ -17,5 +18,37 @@ class Usuario {
     return res.rows[0];
   }
 }
+=======
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config');
+
+const Usuario = sequelize.define('Usuario', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  nombre: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING(150),
+    allowNull: false,
+    unique: true
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  rol: {
+    type: DataTypes.ENUM('admin', 'editor', 'lector'),
+    allowNull: false
+  }
+}, {
+  tableName: 'usuarios',
+  timestamps: false
+});
+>>>>>>> 358ad3ceb5687a92fb6e698611069d1a0a10c14b
 
 module.exports = Usuario;

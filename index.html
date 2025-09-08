@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="es">
 <head>
@@ -198,3 +199,56 @@
   </script>
 </body>
 </html>
+=======
+<script>
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formMsg.textContent = '';
+    formMsg.className = 'msg';
+
+    const nombre = $('#nombre').value.trim();
+    const email = $('#email').value.trim();
+    const password = $('#password').value;
+    const rol = $('#rol').value;
+
+    if (!nombre || !email || !password || !rol) {
+      formMsg.textContent = 'Completa todos los campos.';
+      formMsg.classList.add('err');
+      return;
+    }
+
+    btnCrear.disabled = true;
+    btnCrear.textContent = 'Creando…';
+
+    try {
+      const res = await fetch('/usuarios/nuevo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ nombre, email, password, rol })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Error al crear usuario');
+      }
+      const data = await res.json();
+      // Sequelize responde con { mensaje: "...", usuario: {...} }
+      const creado = data.usuario;
+      formMsg.textContent = `✅ Usuario creado: ${creado.nombre} (${creado.email})`;
+      formMsg.classList.add('ok');
+      form.reset();
+      await cargarUsuarios();
+    } catch (err) {
+      console.error(err);
+      formMsg.textContent = err.message.includes('duplicate') || err.message.includes('unique')
+        ? 'El email ya existe.'
+        : 'No se pudo crear el usuario.';
+      formMsg.classList.add('err');
+    } finally {
+      btnCrear.disabled = false;
+      btnCrear.textContent = 'Crear usuario';
+    }
+  });
+
+</script>
+>>>>>>> 358ad3ceb5687a92fb6e698611069d1a0a10c14b
