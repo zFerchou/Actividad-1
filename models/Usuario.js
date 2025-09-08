@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 const { Pool } = require('pg');
 const config = require('../config');
 
@@ -18,7 +18,7 @@ class Usuario {
     return res.rows[0];
   }
 }
-=======
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config');
 
@@ -49,6 +49,6 @@ const Usuario = sequelize.define('Usuario', {
   tableName: 'usuarios',
   timestamps: false
 });
->>>>>>> 358ad3ceb5687a92fb6e698611069d1a0a10c14b
+
 
 module.exports = Usuario;

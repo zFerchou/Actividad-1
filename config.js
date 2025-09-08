@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 module.exports = {
     db: {
       user: '',
@@ -12,7 +12,7 @@ module.exports = {
     }
   };
   
-=======
+
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize('seguridad', 'postgres', '123', {
@@ -21,4 +21,4 @@ const sequelize = new Sequelize('seguridad', 'postgres', '123', {
 });
 
 module.exports = sequelize;
->>>>>>> 358ad3ceb5687a92fb6e698611069d1a0a10c14b
+
