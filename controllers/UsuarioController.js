@@ -1,42 +1,26 @@
 const Usuario = require('../models/Usuario');
 
-exports.listar = async (req, res) => {
-  try {
-    const usuarios = await Usuario.obtenerTodos();
-    res.json(usuarios); // devuelve JSON
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
-
-exports.nuevo = async (req, res) => {
-  try {
-    const { nombre, email, password, rol } = req.body;
-    const usuario = await Usuario.crear(nombre, email, password, rol);
-    res.json(usuario); // devuelve JSON del usuario creado
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-};
-
 const listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Usuario.findAll();
+    const usuarios = await Usuario.obtenerTodos();
     res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
 const crearUsuario = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
-    const usuario = await Usuario.create({ nombre, email, password, rol });
-    res.json(usuario);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const usuario = await Usuario.crear(nombre, email, password, rol);
+    res.json({ mensaje: 'Usuario creado', usuario });
+  } catch (err) {
+    if (err.code === '23505') { // error de UNIQUE constraint
+      res.status(400).json({ error: 'El email ya existe.' });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
 module.exports = { listarUsuarios, crearUsuario };
-
