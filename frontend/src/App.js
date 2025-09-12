@@ -1,12 +1,22 @@
 import React from 'react';
-import Usuarios from './components/Usuarios';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
+import Navigation from './components/Navigation';
+import APICheck from './components/APICheck'; // ← Agrega esto
+import './App.css';
 
 function App() {
   return (
-    <div>
-      <Usuarios />
-      {/* Aquí luego puedes agregar otros componentes nuevos */}
-    </div>
+    <Router>
+      <div className="App">
+        {/* Solo mostrar en desarrollo */}
+        {process.env.NODE_ENV === 'development' && <APICheck />}
+        <Navigation />
+        <main className="main-content">
+          <AppRoutes />
+        </main>
+      </div>
+    </Router>
   );
 }
 
