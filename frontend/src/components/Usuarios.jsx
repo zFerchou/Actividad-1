@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { obtenerUsuarios, crearUsuario } from '../services/api';
+import { usersService } from '../services/api';
+import authService from '../services/auth';
 import './styles.css';
 
 export default function Usuarios() {
@@ -7,18 +8,21 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(false);
   const [formMsg, setFormMsg] = useState('');
   const [stateMessage, setStateMessage] = useState('');
+  const [currentUser] = useState(() => {
+    return authService.getCurrentUser();
+  });
 
   const cargarUsuarios = async () => {
     setLoading(true);
     setStateMessage('Cargando usuarios…');
     try {
-      const data = await obtenerUsuarios();
+      const data = await usersService.obtenerUsuarios();
       setUsuarios(data);
       setStateMessage(`Listo (${data.length} usuario/s).`);
     } catch (err) {
       console.error(err);
       setUsuarios([]);
-      setStateMessage('Error al cargar.');
+      setStateMessage('Error al cargar: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -31,14 +35,20 @@ export default function Usuarios() {
     const password = e.target.password.value;
     const rol = e.target.rol.value;
 
+    // Verificar permisos
+    if (!authService.hasRole('admin')) {
+      setFormMsg('❌ Solo los administradores pueden crear usuarios');
+      return;
+    }
+
     try {
-      const usuario = await crearUsuario({ nombre, email, password, rol });
+      const usuario = await usersService.crearUsuario({ nombre, email, password, rol });
       setFormMsg(`✅ Usuario creado: ${usuario.nombre} (${usuario.email})`);
       e.target.reset();
       cargarUsuarios();
     } catch (err) {
       console.error(err);
-      setFormMsg('No se pudo crear el usuario.');
+      setFormMsg('❌ ' + err.message);
     }
   };
 
@@ -46,16 +56,34 @@ export default function Usuarios() {
     cargarUsuarios();
   }, []);
 
+  // Si el usuario no es admin, mostrar mensaje de no autorizado
+  if (!authService.hasRole('admin')) {
+    return (
+      <div className="container">
+        <header>
+          <h1>Gestión de Usuarios</h1>
+        </header>
+        <div className="card">
+          <h2>Acceso Denegado</h2>
+          <p>No tienes permisos para acceder a esta sección. Solo los administradores pueden gestionar usuarios.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       <header>
         <h1>Gestión de Usuarios — Lista y Registro</h1>
+        <p className="muted">Conectado como: {currentUser?.nombre} ({currentUser?.rol})</p>
       </header>
 
       <main className="grid">
         <section className="card">
           <div className="controls">
-            <button id="btnRecargar" onClick={cargarUsuarios}>Recargar lista</button>
+            <button id="btnRecargar" onClick={cargarUsuarios} disabled={loading}>
+              {loading ? 'Cargando...' : 'Recargar lista'}
+            </button>
             <span id="state" className="muted" aria-live="polite">{stateMessage}</span>
           </div>
           
@@ -67,13 +95,14 @@ export default function Usuarios() {
                 <th>Nombre</th>
                 <th>Email</th>
                 <th style={{width: '120px'}}>Rol</th>
+                <th style={{width: '100px'}}>Estado</th>
               </tr>
             </thead>
             <tbody id="tbodyUsuarios">
               {loading ? (
-                <tr><td colSpan="4" className="muted">Cargando…</td></tr>
+                <tr><td colSpan="5" className="muted">Cargando…</td></tr>
               ) : usuarios.length === 0 ? (
-                <tr><td colSpan="4" className="muted">No hay usuarios aún.</td></tr>
+                <tr><td colSpan="5" className="muted">No hay usuarios aún.</td></tr>
               ) : (
                 usuarios.map(u => (
                   <tr key={u.id}>
@@ -81,6 +110,11 @@ export default function Usuarios() {
                     <td>{u.nombre}</td>
                     <td>{u.email}</td>
                     <td><span className="badge">{u.rol}</span></td>
+                    <td>
+                      <span className={`status ${u.activo ? 'active' : 'inactive'}`}>
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
@@ -113,7 +147,9 @@ export default function Usuarios() {
               </select>
             </div>
             <div className="controls">
-              <button type="submit">Crear usuario</button>
+              <button type="submit" disabled={loading}>
+                {loading ? 'Creando...' : 'Crear usuario'}
+              </button>
               <button className="secondary" type="reset">Limpiar</button>
             </div>
             <div className={`msg ${formMsg.includes('✅') ? 'ok' : 'err'}`} aria-live="polite">
