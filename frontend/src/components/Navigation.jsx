@@ -1,68 +1,110 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authService } from '../services/auth';
+import Button from 'react-bootstrap/Button';
+import Container from 'react-bootstrap/Container';
+import Nav from 'react-bootstrap/Nav';
+import Navbar from 'react-bootstrap/Navbar';
+import NavDropdown from 'react-bootstrap/NavDropdown';
+import Offcanvas from 'react-bootstrap/Offcanvas';
 import '../styles/Navigation.css';
+
+// Simulación del servicio de autenticación (debes reemplazar con tu implementación real)
+const authService = {
+  getCurrentUser: () => {
+    // En una aplicación real, esto obtendría el usuario del localStorage o contexto
+    return JSON.parse(localStorage.getItem('user')) || null;
+  },
+  hasRole: (role) => {
+    const user = JSON.parse(localStorage.getItem('user')) || null;
+    return user && user.rol === role;
+  },
+  logout: () => {
+    localStorage.removeItem('user');
+  }
+};
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = authService.getCurrentUser();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Verificar el usuario al cargar y cuando cambia la ubicación
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
+  }, [location]);
 
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
     authService.logout();
+    setUser(null);
+    navigate('/login');
   };
 
+  // No mostrar navegación si no hay usuario logueado
   if (!user) {
-    return null; // No mostrar navegación si no hay usuario logueado
+    return null;
   }
 
   return (
-    <nav className="navigation">
-      <div className="nav-brand" onClick={() => navigate('/')}>
-        🛡️ Sistema Seguro
-      </div>
-      
-      <div className="nav-links">
-        <button 
-          className={isActive('/') ? 'nav-link active' : 'nav-link'}
-          onClick={() => navigate('/')}
+    <Navbar expand="lg" className="bg-body-tertiary mb-3 custom-navbar">
+      <Container fluid>
+        <Navbar.Brand href="#" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>
+          🛡️ Sistema Seguro
+        </Navbar.Brand>
+        <Navbar.Toggle aria-controls="offcanvasNavbar-expand-lg" />
+        <Navbar.Offcanvas
+          id="offcanvasNavbar-expand-lg"
+          aria-labelledby="offcanvasNavbarLabel-expand-lg"
+          placement="end"
         >
-          🏠 Inicio
-        </button>
-        <button 
-          className={isActive('/perfil') ? 'nav-link active' : 'nav-link'}
-          onClick={() => navigate('/perfil')}
-        >
-          👤 Perfil
-        </button>
-        
-        {authService.hasRole('admin') && (
-          <button 
-            className={isActive('/usuarios') ? 'nav-link active' : 'nav-link'}
-            onClick={() => navigate('/usuarios')}
-          >
-            👥 Usuarios
-          </button>
-        )}
-        
-        <button 
-          className={isActive('/autenticacion') ? 'nav-link active' : 'nav-link'}
-          onClick={() => navigate('/autenticacion')}
-        >
-          🔐 Autenticación
-        </button>
-      </div>
-
-      <div className="nav-user">
-        <span>👋 Hola, {user.nombre}</span>
-        <span className="user-role">({user.rol})</span>
-        <button onClick={handleLogout} className="logout-button">
-          🚪 Salir
-        </button>
-      </div>
-    </nav>
+          <Offcanvas.Header closeButton>
+            <Offcanvas.Title id="offcanvasNavbarLabel-expand-lg">
+              Menú de Navegación
+            </Offcanvas.Title>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            <Nav className="justify-content-start flex-grow-1 pe-3">
+              <Nav.Link 
+                className={isActive('/') ? 'active' : ''}
+                onClick={() => navigate('/')}
+                style={{cursor: 'pointer'}}
+              >
+                🏠 Inicio
+              </Nav.Link>
+              <Nav.Link 
+                className={isActive('/perfil') ? 'active' : ''}
+                onClick={() => navigate('/autenticacion')}
+                style={{cursor: 'pointer'}}
+              >
+                👤 Perfil
+              </Nav.Link>
+              
+              {authService.hasRole('admin') && (
+                <Nav.Link 
+                  className={isActive('/usuarios') ? 'active' : ''}
+                  onClick={() => navigate('/usuarios')}
+                  style={{cursor: 'pointer'}}
+                >
+                  👥 Gestión de Usuarios
+                </Nav.Link>
+              )}
+              
+            </Nav>
+            
+            <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3">
+              <span className="text-nowrap">
+                👋 Hola, {user.nombre} <span className="user-role">({user.rol})</span>
+              </span>
+              <Button variant="outline-danger" size="sm" onClick={handleLogout}>
+                 Cerrar Sesión
+              </Button>
+            </div>
+          </Offcanvas.Body>
+        </Navbar.Offcanvas>
+      </Container>
+    </Navbar>
   );
 };
 

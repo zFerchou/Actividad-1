@@ -8,14 +8,14 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h1>🏠 Sistema de Gestión Segura</h1>
+        <h1> Sistema de Gestión Segura</h1>
         <p>Bienvenido al sistema protegido con autenticación biométrica</p>
       </div>
 
       <div className="home-cards">
-        <div className="home-card" onClick={() => navigate('/perfil')}>
+        <div className="home-card" onClick={() => navigate('/navigation')}>
           <div className="card-icon">👤</div>
-          <h3>Mi Perfil Seguro</h3>
+          <h3>Mi Perfil </h3>
           <p>Gestiona y modifica tu información personal de manera segura</p>
           <button className="card-button">Acceder</button>
         </div>
@@ -27,12 +27,7 @@ const Home = () => {
           <button className="card-button">Acceder</button>
         </div>
 
-        <div className="home-card" onClick={() => navigate('/autenticacion')}>
-          <div className="card-icon">🔐</div>
-          <h3>Autenticación Biométrica</h3>
-          <p>Configura tus métodos de autenticación segura</p>
-          <button className="card-button">Configurar</button>
-        </div>
+        
       </div>
 
       <div className="home-footer">

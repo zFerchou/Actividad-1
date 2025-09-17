@@ -1,5 +1,8 @@
-// config.js
+// config.js - CORREGIDO
 module.exports = {
+  server: {
+    port: process.env.PORT || 8080  // ← Esta debe ser la estructura correcta
+  },
   db: {
     user: 'postgres',
     host: 'localhost',
@@ -7,7 +10,5 @@ module.exports = {
     password: '123',
     port: 5432
   },
-  server: {
-    port: 8080
-  }
+  jwtSecret: process.env.JWT_SECRET || 'tu-clave-secreta-segura-aqui'
 };

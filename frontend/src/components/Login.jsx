@@ -18,7 +18,7 @@ const Login = () => {
       ...credentials,
       [e.target.name]: e.target.value
     });
-    setError(''); // Limpiar error al escribir
+    setError(''); 
   };
 
   const handleSubmit = async (e) => {
@@ -60,27 +60,11 @@ const Login = () => {
     }
   };
 
-  // Datos de prueba para desarrollo
-  const fillTestCredentials = (type) => {
-    if (type === 'admin') {
-      setCredentials({
-        email: 'admin@example.com',
-        password: 'password123'
-      });
-    } else if (type === 'user') {
-      setCredentials({
-        email: 'usuario@example.com',
-        password: 'password123'
-      });
-    }
-    setError('');
-  };
-
   return (
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h2>🔐 Iniciar Sesión</h2>
+          <h2> Iniciar Sesión</h2>
           <p>Ingresa tus credenciales para acceder al sistema</p>
         </div>
 
@@ -125,32 +109,9 @@ const Login = () => {
             className="login-button"
             disabled={loading}
           >
-            {loading ? '⏳ Iniciando sesión...' : '🚀 Iniciar Sesión'}
+            {loading ? ' Iniciando sesión...' : ' Iniciar Sesión'}
           </button>
         </form>
-
-        {/* Solo mostrar en desarrollo */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="test-credentials">
-            <h4>Credenciales de prueba (solo desarrollo):</h4>
-            <div className="test-buttons">
-              <button 
-                type="button" 
-                onClick={() => fillTestCredentials('admin')}
-                className="test-btn"
-              >
-                Llenar Admin
-              </button>
-              <button 
-                type="button" 
-                onClick={() => fillTestCredentials('user')}
-                className="test-btn"
-              >
-                Llenar Usuario
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="login-footer">
           <p>¿No tienes cuenta? <span className="link">Contacta al administrador</span></p>

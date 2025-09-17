@@ -11,16 +11,17 @@ const listarUsuarios = async (req, res) => {
 
 const crearUsuario = async (req, res) => {
   try {
-    const { nombre, email, password, rol } = req.body;
-    const usuario = await Usuario.crear(nombre, email, password, rol);
+    const { nombre, email, password, rol, telefono, direccion } = req.body;
+    const usuario = await Usuario.crear(nombre, email, password, rol, telefono, direccion);
     res.json({ mensaje: 'Usuario creado', usuario });
   } catch (err) {
-    if (err.code === '23505') { // error de UNIQUE constraint
+    if (err.code === '23505') {
       res.status(400).json({ error: 'El email ya existe.' });
     } else {
       res.status(500).json({ error: err.message });
     }
   }
 };
+
 
 module.exports = { listarUsuarios, crearUsuario };
