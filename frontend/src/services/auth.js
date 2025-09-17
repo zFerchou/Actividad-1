@@ -24,12 +24,15 @@ export const authService = {
     return !!authService.getToken();
   },
 
-  // Cerrar sesión
+  // Cerrar sesión (CORREGIDO)
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('autenticado');
-    window.location.href = '/login';
+    
+    // Redirigir a la página de autenticación
+    // Usa '/autenticacion' en lugar de '/login' para consistencia con tus otras rutas
+    window.location.href = '/autenticacion';
   },
 
   // Verificar roles

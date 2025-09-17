@@ -14,38 +14,30 @@ const AppRoutes = () => {
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      
+      <Route path="/autenticacion" element={<AutenticacionBiometrica />} />
+
       {/* Rutas protegidas */}
       <Route path="/" element={
         <ProtectedRoute>
           <Home />
         </ProtectedRoute>
       } />
-      
       <Route path="/home" element={
         <ProtectedRoute>
           <Home />
         </ProtectedRoute>
       } />
-      
       <Route path="/usuarios" element={
         <ProtectedRoute requiredRoles={['admin']}>
           <Usuarios />
         </ProtectedRoute>
       } />
-      
       <Route path="/perfil" element={
-        <ProtectedRoute>
+        <ProtectedRoute requireBiometric={true}>
           <PerfilSeguro />
         </ProtectedRoute>
       } />
-      
-      <Route path="/autenticacion" element={
-        <ProtectedRoute>
-          <AutenticacionBiometrica />
-        </ProtectedRoute>
-      } />
-      
+
       {/* Ruta por defecto */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

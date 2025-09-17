@@ -4,6 +4,7 @@ import AppRoutes from './routes/AppRoutes';
 import Navigation from './components/Navigation';
 import APICheck from './components/APICheck'; // ← Agrega esto
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (

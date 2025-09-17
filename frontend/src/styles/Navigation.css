@@ -1,45 +1,68 @@
-/* ... estilos anteriores ... */
+/* Navigation.css */
+.custom-navbar {
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #333;
-  font-size: 0.9rem;
+.custom-navbar .navbar-brand {
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+.custom-navbar .nav-link {
+  margin: 0 0.5rem;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.custom-navbar .nav-link:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.custom-navbar .nav-link.active {
+  font-weight: bold;
+  color: #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.1);
 }
 
 .user-role {
-  background: #667eea;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
   font-size: 0.8rem;
+  opacity: 0.8;
+  font-style: italic;
 }
 
-.logout-button {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  margin-left: 0.5rem;
+/* Estilos para el offcanvas */
+.offcanvas-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
 }
 
-.logout-button:hover {
-  background: #c82333;
+.offcanvas-title {
+  font-weight: bold;
+  color: #333;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .nav-user {
-    flex-direction: column;
-    gap: 0.3rem;
-    text-align: center;
+/* Estilos responsivos */
+@media (max-width: 991px) {
+  .custom-navbar .d-flex {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
   }
   
-  .logout-button {
-    margin-left: 0;
+  .custom-navbar .nav-link {
+    margin: 0.25rem 0;
+    padding: 0.5rem 1rem;
   }
+}
+
+/* Mejoras visuales generales */
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.btn-outline-danger {
+  border-width: 2px;
+  font-weight: 500;
 }

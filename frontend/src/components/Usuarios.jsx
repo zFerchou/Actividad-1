@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usersService } from '../services/api';
 import authService from '../services/auth';
-import './styles.css';
+import '../styles/Usuarios.css';
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -16,7 +16,7 @@ export default function Usuarios() {
     setLoading(true);
     setStateMessage('Cargando usuarios…');
     try {
-      const data = await usersService.obtenerUsuarios();
+      const data = await usersService.obtenerTodos();
       setUsuarios(data);
       setStateMessage(`Listo (${data.length} usuario/s).`);
     } catch (err) {
@@ -34,15 +34,18 @@ export default function Usuarios() {
     const email = e.target.email.value.trim();
     const password = e.target.password.value;
     const rol = e.target.rol.value;
+    const telefono = e.target.telefono.value.trim();
+    const direccion = e.target.direccion.value.trim();
 
-    // Verificar permisos
     if (!authService.hasRole('admin')) {
-      setFormMsg('❌ Solo los administradores pueden crear usuarios');
+      setFormMsg(' Solo los administradores pueden crear usuarios');
       return;
     }
 
     try {
-      const usuario = await usersService.crearUsuario({ nombre, email, password, rol });
+      const usuario = await usersService.crear({ 
+        nombre, email, password, rol, telefono, direccion 
+      });
       setFormMsg(`✅ Usuario creado: ${usuario.nombre} (${usuario.email})`);
       e.target.reset();
       cargarUsuarios();
@@ -56,7 +59,6 @@ export default function Usuarios() {
     cargarUsuarios();
   }, []);
 
-  // Si el usuario no es admin, mostrar mensaje de no autorizado
   if (!authService.hasRole('admin')) {
     return (
       <div className="container">
@@ -95,14 +97,16 @@ export default function Usuarios() {
                 <th>Nombre</th>
                 <th>Email</th>
                 <th style={{width: '120px'}}>Rol</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
                 <th style={{width: '100px'}}>Estado</th>
               </tr>
             </thead>
             <tbody id="tbodyUsuarios">
               {loading ? (
-                <tr><td colSpan="5" className="muted">Cargando…</td></tr>
+                <tr><td colSpan="7" className="muted">Cargando…</td></tr>
               ) : usuarios.length === 0 ? (
-                <tr><td colSpan="5" className="muted">No hay usuarios aún.</td></tr>
+                <tr><td colSpan="7" className="muted">No hay usuarios aún.</td></tr>
               ) : (
                 usuarios.map(u => (
                   <tr key={u.id}>
@@ -110,6 +114,8 @@ export default function Usuarios() {
                     <td>{u.nombre}</td>
                     <td>{u.email}</td>
                     <td><span className="badge">{u.rol}</span></td>
+                    <td>{u.telefono || '-'}</td>
+                    <td>{u.direccion || '-'}</td>
                     <td>
                       <span className={`status ${u.activo ? 'active' : 'inactive'}`}>
                         {u.activo ? 'Activo' : 'Inactivo'}
@@ -130,6 +136,14 @@ export default function Usuarios() {
               <input id="nombre" name="nombre" required maxLength={100} />
             </div>
             <div className="field">
+              <label htmlFor="telefono">Teléfono</label>
+              <input id="telefono" name="telefono" maxLength={20} />
+            </div>
+            <div className="field">
+              <label htmlFor="direccion">Dirección</label>
+              <input id="direccion" name="direccion" maxLength={255} />
+            </div>
+            <div className="field">
               <label htmlFor="email">Email</label>
               <input id="email" name="email" type="email" required maxLength={150} />
             </div>
@@ -146,6 +160,7 @@ export default function Usuarios() {
                 <option value="lector">lector</option>
               </select>
             </div>
+            
             <div className="controls">
               <button type="submit" disabled={loading}>
                 {loading ? 'Creando...' : 'Crear usuario'}
@@ -156,15 +171,10 @@ export default function Usuarios() {
               {formMsg}
             </div>
           </form>
-          <p className="muted">
-            Al crear, se usará <span className="badge">POST /usuarios/nuevo</span>. 
-            La lista consume <span className="badge">GET /usuarios</span>.
-          </p>
+          <p className="muted"></p>
         </aside>
 
-        <footer className="grid-full">
-          <p>Conectado a tu API Express/Node. Asegúrate de exponer las rutas <strong>/usuarios</strong> y <strong>/usuarios/nuevo</strong>.</p>
-        </footer>
+        <footer className="grid-full"></footer>
       </main>
     </div>
   );
