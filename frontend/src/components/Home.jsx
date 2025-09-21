@@ -1,12 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth';
+import Notificaciones from './Notificaciones';
 import '../styles/Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
+  const user = authService.getCurrentUser();
 
   return (
     <div className="home-container">
+      {/* Notificaciones en tiempo real para el usuario autenticado */}
+      {user && <Notificaciones usuarioId={user.id} />}
+
       <div className="home-header">
         <h1> Sistema de Gestión Segura</h1>
         <p>Bienvenido al sistema protegido con autenticación biométrica</p>
@@ -26,8 +32,6 @@ const Home = () => {
           <p>Administra los usuarios del sistema (requiere permisos)</p>
           <button className="card-button">Acceder</button>
         </div>
-
-        
       </div>
 
       <div className="home-footer">

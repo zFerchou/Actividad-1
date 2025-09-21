@@ -250,4 +250,15 @@ export const setupApiInterceptor = (navigate) => {
   };
 };
 
+// --- Notificaciones ---
+export const notificacionesAPI = {
+  listar: async (usuarioId) => authFetch(`/notificaciones/${usuarioId}`),
+  crear: async (data) => authFetch('/notificaciones', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  marcarLeida: async (id) => authFetch(`api/notificaciones/leida/${id}`, { method: 'PATCH' }),
+  eliminarExpiradas: async () => authFetch('/notificaciones/expiradas', { method: 'DELETE' }),
+};
+
 export default authFetch;

@@ -43,9 +43,30 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // 4. Responder con token (elimina password de la respuesta)
+
+    // 4. Enviar notificación crítica por email al iniciar sesión
+    try {
+      const Notificacion = require('../models/Notificacion');
+      const { enviarCorreo } = require('../utils/mailer');
+      const { getIO, getUsuariosConectados } = require('../socket');
+      const mensaje = `¡Hola ${user.nombre}! Has iniciado sesión en tu cuenta el ${new Date().toLocaleString()}`;
+      // Crear notificación en la base de datos
+      const notificacion = await Notificacion.crear(user.id, mensaje, true);
+      // Enviar correo
+      await enviarCorreo(user.email, 'Notificación de inicio de sesión', mensaje);
+      // Emitir en tiempo real si está conectado
+      const usuariosConectados = getUsuariosConectados();
+      const io = getIO();
+      const socketId = usuariosConectados.get(String(user.id));
+      if (io && socketId) {
+        io.to(socketId).emit('nuevaNotificacion', notificacion);
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de inicio de sesión:', notifErr);
+    }
+
+    // 5. Responder con token (elimina password de la respuesta)
     const { password: _, ...userWithoutPassword } = user;
-    
     console.log('Login exitoso para:', email);
     res.json({
       success: true,
