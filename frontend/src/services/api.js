@@ -1,6 +1,6 @@
 import authService from './auth';
 
-const API_URL = 'http://localhost:8080';
+const API_URL = '/api'; // Usar proxy para evitar CORS
 
 // Función genérica para requests autenticados
 const authFetch = async (endpoint, options = {}) => {
@@ -257,7 +257,7 @@ export const notificacionesAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  marcarLeida: async (id) => authFetch(`api/notificaciones/leida/${id}`, { method: 'PATCH' }),
+  marcarLeida: async (id) => authFetch(`/notificaciones/leida/${id}`, { method: 'PATCH' }),
   eliminarExpiradas: async () => authFetch('/notificaciones/expiradas', { method: 'DELETE' }),
 };
 

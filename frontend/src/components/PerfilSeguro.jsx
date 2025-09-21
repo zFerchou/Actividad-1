@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useNavigate } from 'react-router-dom';
 import { profileService } from '../services/api'; // ← CAMBIADO: Importar profileService en lugar de authAPI
 import authService from '../services/auth';
@@ -10,6 +11,7 @@ const PerfilSeguro = () => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const online = useOnlineStatus();
 
   useEffect(() => {
     cargarPerfilUsuario();
@@ -73,12 +75,16 @@ const PerfilSeguro = () => {
 
   return (
     <div className="perfil-seguro">
-      <h2>Mi Perfil Seguro</h2>
+      <h2>Mi Perfil Seguro {online ? '' : '(offline)'}</h2>
       <button onClick={cerrarSesion} className="btn-cerrar-sesion">
         Cerrar Sesión
       </button>
-
-      {editando ? (
+      {!online && (
+        <div style={{color:'orange', marginBottom: 10}}>
+          Estás en modo solo lectura. No puedes editar tu perfil sin conexión.
+        </div>
+      )}
+      {editando && online ? (
         <FormularioEdicion 
           usuario={usuario} 
           onGuardar={handleGuardar}
@@ -88,14 +94,15 @@ const PerfilSeguro = () => {
       ) : (
         <InformacionUsuario 
           usuario={usuario} 
-          onEditar={() => setEditando(true)}
+          onEditar={online ? () => setEditando(true) : undefined}
+          online={online}
         />
       )}
     </div>
   );
 };
 
-const InformacionUsuario = ({ usuario, onEditar }) => (
+const InformacionUsuario = ({ usuario, onEditar, online }) => (
   <div className="informacion-usuario">
     <div className="campo">
       <label>Nombre:</label>
@@ -117,7 +124,7 @@ const InformacionUsuario = ({ usuario, onEditar }) => (
       <label>Rol:</label>
       <span>{usuario.rol || 'Usuario'}</span>
     </div>
-    <button onClick={onEditar} className="btn-editar">
+    <button onClick={onEditar} className="btn-editar" disabled={!online}>
       Editar Información
     </button>
   </div>
