@@ -26,6 +26,7 @@ app.use(express.static('public'));
 app.use('/usuarios', usuariosRoutes);
 app.use('/auth', authRoutes);
 app.use('/perfil', perfilRoutes); // ← RUTA AÑADIDA
+app.use('/api/auth', authRoutes);
 
 // Swagger documentation
 const swaggerDocument = YAML.load('./swagger.yaml');

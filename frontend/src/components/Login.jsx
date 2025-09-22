@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Agregar Link
 import { authAPI } from '../services/api';
 import authService from '../services/auth';
 import '../styles/Login.css';
@@ -64,7 +64,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h2> Iniciar Sesión</h2>
+          <h2>Iniciar Sesión</h2>
           <p>Ingresa tus credenciales para acceder al sistema</p>
         </div>
 
@@ -109,13 +109,25 @@ const Login = () => {
             className="login-button"
             disabled={loading}
           >
-            {loading ? ' Iniciando sesión...' : ' Iniciar Sesión'}
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
           </button>
         </form>
 
         <div className="login-footer">
-          <p>¿No tienes cuenta? <span className="link">Contacta al administrador</span></p>
-          <p>¿Olvidaste tu contraseña? <span className="link">Recuperar acceso</span></p>
+          <p>
+            ¿No tienes cuenta? 
+            <span className="link"> Contacta al administrador</span>
+          </p>
+          
+          {/* ENLACES DE RECUPERACIÓN - CORREGIDOS */}
+          <div className="recovery-links">
+            <Link to="/forgot-username" className="link">
+              ¿Olvidaste tu nombre de usuario?
+            </Link>
+            <Link to="/forgot-password" className="link">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </div>
       </div>
     </div>
