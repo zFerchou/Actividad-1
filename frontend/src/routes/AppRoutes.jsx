@@ -1,19 +1,28 @@
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../components/Home';
+import NotificacionScreen from '../components/NotificacionScreen';
 import Login from '../components/Login';
 import Usuarios from '../components/Usuarios';
 import PerfilSeguro from '../components/PerfilSeguro';
-import PerfilSeguroOffline from '../components/PerfilSeguroOffline';
 import AutenticacionBiometrica from '../components/AutenticacionBiometrica';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import Unauthorized from '../components/Unauthorized';
+
 import UsuariosOffline from '../components/UsuariosOffline';
 
 
 const AppRoutes = () => {
   return (
     <Routes>
+
+      {/* Pantalla de notificaciones */}
+      <Route path="/notificaciones" element={
+        <ProtectedRoute>
+          <NotificacionScreen />
+        </ProtectedRoute>
+      } />
 
       {/* Rutas para usuarios offline */}
       <Route path="/usuarios-offline" element={

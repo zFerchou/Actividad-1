@@ -44,10 +44,15 @@ const listarNotificaciones = async (req, res) => {
 
 const marcarLeida = async (req, res) => {
   try {
+    console.log('PATCH /notificaciones/leida/:id llamada');
+    console.log('Headers:', req.headers);
+    console.log('Params:', req.params);
     const { id } = req.params;
     const notificacion = await Notificacion.marcarLeida(id);
+    console.log('Resultado de marcarLeida:', notificacion);
     res.json(notificacion);
   } catch (error) {
+    console.error('Error en marcarLeida:', error);
     res.status(500).json({ error: 'Error al marcar como leída' });
   }
 };

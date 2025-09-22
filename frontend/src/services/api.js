@@ -1,6 +1,6 @@
 import authService from './auth';
 
-const API_URL = '/api'; // Usar proxy para evitar CORS
+const API_URL = 'http://localhost:8080'; // Usar proxy para evitar CORS
 
 // Función genérica para requests autenticados
 const authFetch = async (endpoint, options = {}) => {
