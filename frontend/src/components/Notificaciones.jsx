@@ -3,7 +3,7 @@ import { notificacionesAPI } from '../services/api';
 import { useSocketNotificaciones } from './useSocketNotificaciones';
 import './styles.css';
 
-function Notificaciones({ usuarioId }) {
+function Notificaciones({ usuarioId, online = true }) {
   const [notificaciones, setNotificaciones] = useState([]);
 
 
@@ -23,6 +23,7 @@ function Notificaciones({ usuarioId }) {
   useSocketNotificaciones(usuarioId, onNuevaNotificacion);
 
   const marcarLeida = async (id) => {
+    if (!online) return;
     await notificacionesAPI.marcarLeida(id);
     setNotificaciones(nots => nots.map(n => n.id === id ? { ...n, leida: true } : n));
   };
@@ -37,7 +38,7 @@ function Notificaciones({ usuarioId }) {
             <span>{n.mensaje}</span>
             <span className="fecha">{new Date(n.fecha_creacion).toLocaleString()}</span>
             {!n.leida && (
-              <button onClick={() => marcarLeida(n.id)}>Marcar como leída</button>
+              <button onClick={() => marcarLeida(n.id)} disabled={!online}>Marcar como leída</button>
             )}
           </li>
         ))}

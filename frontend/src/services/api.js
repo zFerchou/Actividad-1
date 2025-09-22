@@ -78,6 +78,13 @@ export const authAPI = {
     return authFetch('/auth/logout', {
       method: 'POST',
     });
+  },
+
+  verify2FA: async ({ userId, codigo }) => {
+    return authFetch('/auth/verify-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ userId, codigo }),
+    });
   }
 };
 

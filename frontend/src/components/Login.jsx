@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Verificar2FA from './Verificar2FA';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import authService from '../services/auth';
@@ -11,6 +12,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pending2FA, setPending2FA] = useState(null); // { userId, email }
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -34,31 +36,35 @@ const Login = () => {
     }
 
     try {
-      console.log('Intentando login con:', credentials);
       const data = await authAPI.login(credentials);
-      console.log('Login exitoso:', data);
-      
-      // Guardar datos de autenticación
-      authService.setAuthData(data.token, data.user);
-      
-      navigate('/');
-    } catch (err) {
-      console.error('Error en login:', err);
-      
-      // Manejar diferentes tipos de errores
-      if (err.message.includes('Failed to fetch')) {
-        setError('No se pudo conectar con el servidor. Verifica que la API esté ejecutándose.');
-      } else if (err.message.includes('404')) {
-        setError('Endpoint no encontrado. Verifica la URL de la API.');
-      } else if (err.message.includes('401')) {
-        setError('Credenciales incorrectas');
+      if (data.require2FA) {
+        setPending2FA({ userId: data.userId, email: data.email });
+      } else if (data.token && data.user) {
+        authService.setAuthData(data.token, data.user);
+        navigate('/');
       } else {
-        setError(err.message || 'Error en el login');
+        setError('Respuesta inesperada del servidor');
       }
+    } catch (err) {
+      setError(err.message || 'Error en el login');
     } finally {
       setLoading(false);
     }
   };
+
+  if (pending2FA) {
+    return (
+      <Verificar2FA
+        userId={pending2FA.userId}
+        email={pending2FA.email}
+        onSuccess={data => {
+          authService.setAuthData(data.token, data.user);
+          navigate('/');
+        }}
+        onError={errMsg => setError(errMsg)}
+      />
+    );
+  }
 
   return (
     <div className="login-container">
