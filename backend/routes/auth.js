@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const router = express.Router();
 const pool = require('../database/db');
+const authController = require('../controllers/authController');
 
 // --- 2FA: almacenamiento en memoria ---
 const codigos2FA = new Map(); // userId -> { codigo, expiresAt }
@@ -13,7 +14,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('Intentando login con:', { email, password });
+    console.log('Intentando login con:', { email, password }); // Debug
 
     // 1. Buscar usuario en la base de datos
     const result = await pool.query(
@@ -27,9 +28,9 @@ router.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
-    console.log('Usuario encontrado:', user);
+    console.log('Usuario encontrado:', user); // Debug
 
-    // 2. Verificar contraseña (texto plano)
+    // 2. Verificar contraseña (texto plano, cambiar por bcrypt si quieres)
     if (password !== user.password) {
       console.log('Contraseña incorrecta para usuario:', email);
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -118,6 +119,11 @@ router.post('/verify-2fa', async (req, res) => {
   }
 });
 
-// Exportar codigos2FA para usar en la validación
-module.exports = { router, codigos2FA };
+// ===================== RECUPERACIÓN DE USUARIO / CONTRASEÑA =====================
+router.post('/forgot-username', authController.forgotUsername);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+router.get('/verify-token/:token', authController.verifyToken);
+
+// Exportar router y codigos2FA
 module.exports = router;

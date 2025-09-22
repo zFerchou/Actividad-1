@@ -9,6 +9,9 @@ import PerfilSeguro from '../components/PerfilSeguro';
 import AutenticacionBiometrica from '../components/AutenticacionBiometrica';
 import ProtectedRoute from '../routes/ProtectedRoute';
 import Unauthorized from '../components/Unauthorized';
+import ForgotUsername from '../components/ForgotUsername';
+import ForgotPassword from '../components/ForgotPassword';
+import ResetPassword from '../components/ResetPassword';
 
 import UsuariosOffline from '../components/UsuariosOffline';
 
@@ -34,6 +37,11 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/autenticacion" element={<AutenticacionBiometrica />} />
+      
+      {/* Nuevas rutas de recuperación */}
+      <Route path="/forgot-username" element={<ForgotUsername />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       {/* Rutas protegidas */}
       <Route path="/" element={
