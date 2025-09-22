@@ -1,6 +1,6 @@
 import authService from './auth';
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'http://localhost:8080'; // Usar proxy para evitar CORS
 
 // Función genérica para requests autenticados
 const authFetch = async (endpoint, options = {}) => {
@@ -77,6 +77,13 @@ export const authAPI = {
   logout: async () => {
     return authFetch('/auth/logout', {
       method: 'POST',
+    });
+  },
+
+  verify2FA: async ({ userId, codigo }) => {
+    return authFetch('/auth/verify-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ userId, codigo }),
     });
   }
 };
@@ -248,6 +255,17 @@ export const setupApiInterceptor = (navigate) => {
       throw error;
     }
   };
+};
+
+// --- Notificaciones ---
+export const notificacionesAPI = {
+  listar: async (usuarioId) => authFetch(`/notificaciones/${usuarioId}`),
+  crear: async (data) => authFetch('/notificaciones', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  marcarLeida: async (id) => authFetch(`/notificaciones/leida/${id}`, { method: 'PATCH' }),
+  eliminarExpiradas: async () => authFetch('/notificaciones/expiradas', { method: 'DELETE' }),
 };
 
 export default authFetch;

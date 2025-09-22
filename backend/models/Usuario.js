@@ -20,6 +20,11 @@ class Usuario {
     );
     return res.rows[0];
   }
+
+  static async obtenerEmailPorId(id) {
+    const res = await pool.query('SELECT email FROM usuarios WHERE id = $1', [id]);
+    return res.rows[0]?.email;
+  }
 }
 
 module.exports = Usuario;

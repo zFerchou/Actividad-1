@@ -7,6 +7,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import '../styles/Navigation.css';
+import { useNotificaciones } from '../hooks/useNotificaciones';
 
 // Simulación del servicio de autenticación (debes reemplazar con tu implementación real)
 const authService = {
@@ -27,6 +28,8 @@ const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const usuarioId = user?.id;
+  const { noLeidas } = useNotificaciones(usuarioId);
 
   useEffect(() => {
     // Verificar el usuario al cargar y cuando cambia la ubicación
@@ -66,6 +69,29 @@ const Navigation = () => {
           </Offcanvas.Header>
           <Offcanvas.Body>
             <Nav className="justify-content-start flex-grow-1 pe-3">
+              <Nav.Link 
+                className={isActive('/notificaciones') ? 'active' : ''}
+                onClick={() => navigate('/notificaciones')}
+                style={{cursor: 'pointer', position: 'relative'}}
+                aria-label="Notificaciones"
+              >
+                <span style={{fontSize: '1.5rem'}}>🔔</span>
+                {noLeidas > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    background: 'red',
+                    color: 'white',
+                    borderRadius: '50%',
+                    fontSize: '0.8rem',
+                    padding: '2px 6px',
+                    minWidth: 18,
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                  }}>{noLeidas}</span>
+                )}
+              </Nav.Link>
               <Nav.Link 
                 className={isActive('/') ? 'active' : ''}
                 onClick={() => navigate('/')}

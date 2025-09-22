@@ -7,15 +7,16 @@ const config = require('./config');
 const usuariosRoutes = require('./routes/usuarios');
 const authRoutes = require('./routes/auth');
 const perfilRoutes = require('./routes/perfil'); // ← IMPORTACIÓN AÑADIDA
+const notificacionesRoutes = require('./routes/notificaciones');
 
 const app = express();
 
 // CORS configuration
 app.use(cors({
-    origin: 'http://localhost:3000',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 // Middleware
@@ -26,6 +27,7 @@ app.use(express.static('public'));
 app.use('/usuarios', usuariosRoutes);
 app.use('/auth', authRoutes);
 app.use('/perfil', perfilRoutes); // ← RUTA AÑADIDA
+app.use('/notificaciones', notificacionesRoutes);
 
 // Swagger documentation
 const swaggerDocument = YAML.load('./swagger.yaml');
@@ -52,19 +54,26 @@ app.use((req, res) => {
       '/usuarios',
       '/auth', 
       '/perfil',
+      '/notificaciones',
       '/docs',
       '/health'
     ]
   });
 });
 
+// SOCKET.IO refactor
+const http = require('http');
+const server = http.createServer(app);
+const { initSocket } = require('./socket');
+initSocket(server);
 
 // Iniciar servidor
-app.listen(config.server.port, () => {
+server.listen(config.server.port, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${config.server.port}`);
   console.log(`👥 API de usuarios: http://localhost:${config.server.port}/usuarios`);
   console.log(`🔐 API de auth: http://localhost:${config.server.port}/auth`);
-  console.log(`👤 API de perfil: http://localhost:${config.server.port}/perfil`); // ← AÑADIDO
+  console.log(`👤 API de perfil: http://localhost:${config.server.port}/perfil`);
+  console.log(`🔔 API de notificaciones: http://localhost:${config.server.port}/notificaciones`);
   console.log(`📚 Documentación Swagger: http://localhost:${config.server.port}/docs`);
   console.log(`❤️  Health check: http://localhost:${config.server.port}/health`);
 });

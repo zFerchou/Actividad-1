@@ -1,0 +1,47 @@
+.verificar-2fa-container {
+  max-width: 400px;
+  margin: 60px auto 0 auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px 0 rgba(0,0,0,0.08);
+  padding: 32px 24px 24px 24px;
+  text-align: center;
+}
+
+.verificar-2fa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.verificar-2fa-form input {
+  font-size: 1.3rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #bdbdbd;
+  text-align: center;
+  letter-spacing: 4px;
+}
+
+.verificar-2fa-form button {
+  background: #2b3a55;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.verificar-2fa-form button:disabled {
+  background: #bdbdbd;
+  cursor: not-allowed;
+}
+
+.verificar-2fa-error {
+  color: #e63946;
+  margin-top: 12px;
+  font-weight: bold;
+}

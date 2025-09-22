@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usersService } from '../services/api';
 import authService from '../services/auth';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import '../styles/Usuarios.css';
 
 export default function Usuarios() {
@@ -11,6 +12,7 @@ export default function Usuarios() {
   const [currentUser] = useState(() => {
     return authService.getCurrentUser();
   });
+  const online = useOnlineStatus();
 
   const cargarUsuarios = async () => {
     setLoading(true);
@@ -75,6 +77,11 @@ export default function Usuarios() {
 
   return (
     <div className="container">
+      {!online && (
+        <div style={{color:'orange', marginBottom: 16, fontWeight: 'bold', textAlign: 'center'}}>
+          Estás en modo solo lectura. No puedes acceder a las funciones protegidas sin conexión.
+        </div>
+      )}
       <header>
         <h1>Gestión de Usuarios — Lista y Registro</h1>
         <p className="muted">Conectado como: {currentUser?.nombre} ({currentUser?.rol})</p>
@@ -83,7 +90,7 @@ export default function Usuarios() {
       <main className="grid">
         <section className="card">
           <div className="controls">
-            <button id="btnRecargar" onClick={cargarUsuarios} disabled={loading}>
+            <button id="btnRecargar" onClick={online ? cargarUsuarios : undefined} disabled={loading || !online}>
               {loading ? 'Cargando...' : 'Recargar lista'}
             </button>
             <span id="state" className="muted" aria-live="polite">{stateMessage}</span>
@@ -133,27 +140,27 @@ export default function Usuarios() {
           <form onSubmit={handleSubmit} autoComplete="off">
             <div className="field">
               <label htmlFor="nombre">Nombre</label>
-              <input id="nombre" name="nombre" required maxLength={100} />
+              <input id="nombre" name="nombre" required maxLength={100} disabled={!online} />
             </div>
             <div className="field">
               <label htmlFor="telefono">Teléfono</label>
-              <input id="telefono" name="telefono" maxLength={20} />
+              <input id="telefono" name="telefono" maxLength={20} disabled={!online} />
             </div>
             <div className="field">
               <label htmlFor="direccion">Dirección</label>
-              <input id="direccion" name="direccion" maxLength={255} />
+              <input id="direccion" name="direccion" maxLength={255} disabled={!online} />
             </div>
             <div className="field">
               <label htmlFor="email">Email</label>
-              <input id="email" name="email" type="email" required maxLength={150} />
+              <input id="email" name="email" type="email" required maxLength={150} disabled={!online} />
             </div>
             <div className="field">
               <label htmlFor="password">Contraseña</label>
-              <input id="password" name="password" type="password" required minLength={6} maxLength={255} />
+              <input id="password" name="password" type="password" required minLength={6} maxLength={255} disabled={!online} />
             </div>
             <div className="field">
               <label htmlFor="rol">Rol</label>
-              <select id="rol" name="rol" required>
+              <select id="rol" name="rol" required disabled={!online}>
                 <option value="">— Selecciona —</option>
                 <option value="admin">admin</option>
                 <option value="editor">editor</option>
@@ -162,10 +169,10 @@ export default function Usuarios() {
             </div>
             
             <div className="controls">
-              <button type="submit" disabled={loading}>
+              <button type="submit" disabled={loading || !online}>
                 {loading ? 'Creando...' : 'Crear usuario'}
               </button>
-              <button className="secondary" type="reset">Limpiar</button>
+              <button className="secondary" type="reset" disabled={!online}>Limpiar</button>
             </div>
             <div className={`msg ${formMsg.includes('✅') ? 'ok' : 'err'}`} aria-live="polite">
               {formMsg}
