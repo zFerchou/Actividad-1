@@ -8,6 +8,9 @@ const usuariosRoutes = require('./routes/usuarios');
 const authRoutes = require('./routes/auth');
 const perfilRoutes = require('./routes/perfil'); // ← IMPORTACIÓN AÑADIDA
 const notificacionesRoutes = require('./routes/notificaciones');
+const historialRoutes = require('./routes/historial');
+const dashboardRoutes = require('./routes/dashboard');
+const geolocRoutes = require('./routes/geoloc');
 
 const app = express();
 
@@ -28,6 +31,9 @@ app.use('/usuarios', usuariosRoutes);
 app.use('/auth', authRoutes);
 app.use('/perfil', perfilRoutes); // ← RUTA AÑADIDA
 app.use('/notificaciones', notificacionesRoutes); // mantener
+app.use('/historial', historialRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/geoloc', geolocRoutes);
 
 // Swagger documentation
 const swaggerDocument = YAML.load('./swagger.yaml');
@@ -55,6 +61,9 @@ app.use((req, res) => {
       '/auth', 
       '/perfil',
       '/notificaciones',
+      '/historial',
+      '/dashboard',
+      '/geoloc',
       '/docs',
       '/health'
     ]
