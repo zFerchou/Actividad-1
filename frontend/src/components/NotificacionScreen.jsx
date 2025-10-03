@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Notificaciones from './Notificaciones';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import '../styles/NotificacionScreen.css';
 

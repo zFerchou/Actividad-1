@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Verificar2FA from './Verificar2FA';
 import { useNavigate, Link } from 'react-router-dom'; // Mantener useNavigate y Link
 import { authAPI } from '../services/api';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import '../styles/Login.css';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { geolocAPI } from '../services/api';

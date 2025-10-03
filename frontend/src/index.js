@@ -5,11 +5,16 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 // Registrar el service worker para PWA offline
-if ('serviceWorker' in navigator) {
+
+// Registrar el service worker solo en producción
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js');
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('ServiceWorker registrado:', reg))
+      .catch(err => console.log('Error al registrar ServiceWorker:', err));
   });
 }
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

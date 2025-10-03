@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import '../styles/AuthForms.css';
 
 const ResetPassword = () => {
@@ -15,22 +15,23 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verifyToken = async () => {
-      try {
-        await authService.verifyToken(token);
-        setValidToken(true);
-      } catch (err) {
-        setValidToken(false);
-        setError(err?.toString() || 'El enlace de recuperación es inválido o ha expirado.');
-      }
-    };
+  const verifyTokenAsync = async () => {
+    try {
+      if (!token) throw new Error('No hay token para verificar');
 
-    if (token) verifyToken();
-    else {
+      // Decodificar token solo una vez desde URL
+      const decodedToken = decodeURIComponent(token);
+
+      await authService.verifyToken(decodedToken);
+      setValidToken(true);
+    } catch (err) {
       setValidToken(false);
-      setError('Token no proporcionado');
+      setError(err?.response?.data?.message || err?.toString() || 'Enlace inválido o expirado');
     }
-  }, [token]);
+  };
+
+  verifyTokenAsync();
+}, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,13 +48,20 @@ const ResetPassword = () => {
 
     setLoading(true);
     setError('');
+    setMessage('');
 
     try {
-      const response = await authService.resetPassword(token, newPassword);
+      const decodedToken = decodeURIComponent(token);
+      const response = await authService.resetPassword(decodedToken, newPassword);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Error al restablecer la contraseña');
+      }
+
       setMessage(response.message || 'Contraseña restablecida con éxito');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err?.toString() || 'Error al restablecer la contraseña');
+      setError(err?.response?.data?.message || err?.message || 'Error al restablecer la contraseña');
     } finally {
       setLoading(false);
     }
@@ -67,7 +75,6 @@ const ResetPassword = () => {
             <h2>Enlace Inválido</h2>
             <p>{error}</p>
           </div>
-
           <div className="auth-links">
             <Link to="/forgot-password" className="btn btn-primary">Solicitar nuevo enlace</Link>
             <Link to="/login" className="link">Volver al Login</Link>

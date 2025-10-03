@@ -64,6 +64,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Require2FAResponse'
+
   /auth/verify-2fa:
     post:
       tags: [Autenticación]
@@ -87,6 +88,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSuccess'
+
   /auth/verify-token/{token}:
     get:
       tags: [Autenticación]
@@ -99,11 +101,6 @@ paths:
           schema:
             type: string
           description: Token JWT emitido tras completar 2FA o token de recuperación
-      x-codeSamples:
-        - lang: curl
-          label: JWT
-          source: |
-            curl -X GET "http://localhost:8080/auth/verify-token/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx.yyy"
       responses:
         '200':
           description: Token válido
@@ -111,6 +108,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyTokenResponse'
+
   /auth/me:
     get:
       tags: [Autenticación]
@@ -144,8 +142,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-username:
+    post:
+      tags: [Autenticación]
+      summary: Recuperar nombre de usuario
+      description: Envía el nombre de usuario al correo asociado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        '200':
+          description: Nombre de usuario enviado al correo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Falta el correo electrónico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Correo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags: [Autenticación]
+      summary: Recuperar contraseña
+      description: Envía un enlace de restablecimiento al correo electrónico si existe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        '200':
+          description: Si el correo existe, se envió un enlace de recuperación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Falta el correo electrónico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags: [Autenticación]
+      summary: Restablecer contraseña
+      description: Permite crear una nueva contraseña usando un token de recuperación válido.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+              required: [token, newPassword]
+      responses:
+        '200':
+          description: Contraseña restablecida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Token inválido, expirado o contraseña débil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /historial/{usuarioId}:
-  
     get:
       tags: [Historial]
       summary: Obtener historial de compras/servicios del usuario
@@ -193,6 +289,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistorialResponse'
+
   /dashboard/estadisticas:
     get:
       tags: [Reportes]
@@ -204,6 +301,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadisticasResponse'
+
   /dashboard/actividad:
     get:
       tags: [Reportes]
@@ -217,6 +315,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Interaccion'
+
   /dashboard/reportes:
     get:
       tags: [Reportes]
@@ -267,6 +366,7 @@ paths:
               schema:
                 type: string
                 format: binary
+
   /geoloc/login:
     post:
       tags: [Geolocalización]
@@ -294,6 +394,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoRecord'
+
   /geoloc/track:
     post:
       tags: [Geolocalización]
@@ -314,6 +415,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoRecord'
+
   /geoloc/last:
     get:
       tags: [Geolocalización]
@@ -328,7 +430,9 @@ paths:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/GeoRecord'
-                  - type: 'null'
+                  - type: object
+                    nullable: true
+
   /geoloc/historial:
     get:
       tags: [Geolocalización]
@@ -360,12 +464,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GeoRecord'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   schemas:
     LoginRequest:
       type: object
@@ -377,6 +483,7 @@ components:
           type: string
           format: password
       required: [email, password]
+
     Require2FAResponse:
       type: object
       properties:
@@ -389,7 +496,7 @@ components:
         userId:
           type: integer
           example: 1
-          example: Juan Pérez
+
     Login2FARequest:
       type: object
       properties:
@@ -399,6 +506,7 @@ components:
           type: string
           description: Código de 6 dígitos
       required: [userId, codigo]
+
     AuthSuccess:
       type: object
       properties:
@@ -410,6 +518,7 @@ components:
           description: JWT con expiración de 24 horas (campo exp)
         user:
           $ref: '#/components/schemas/User'
+
     VerifyTokenResponse:
       type: object
       properties:
@@ -423,6 +532,7 @@ components:
           type: string
           format: email
           example: usuario@ejemplo.com
+
     User:
       type: object
       properties:
@@ -439,12 +549,24 @@ components:
         rol:
           type: string
           example: user
+
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
           example: Mensaje de error
+
+    GenericSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operación completada correctamente
+
     GeoInput:
       type: object
       properties:
@@ -463,6 +585,7 @@ components:
         fuente:
           type: string
           example: navigator
+
     GeoRecord:
       type: object
       properties:
@@ -489,6 +612,7 @@ components:
         creado_en:
           type: string
           format: date-time
+
     HistorialResponse:
       type: object
       properties:
@@ -500,6 +624,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Compra'
+
     Compra:
       type: object
       properties:
@@ -525,6 +650,7 @@ components:
         fecha:
           type: string
           format: date-time
+
     EstadisticasResponse:
       type: object
       properties:
@@ -550,6 +676,7 @@ components:
           type: number
           format: float
           example: 42.35
+
     Interaccion:
       type: object
       properties:
@@ -570,6 +697,7 @@ components:
         fecha:
           type: string
           format: date-time
+
     ReporteResponse:
       type: object
       properties:

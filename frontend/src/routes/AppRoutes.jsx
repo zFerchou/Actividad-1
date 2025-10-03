@@ -15,7 +15,7 @@ import ResetPassword from '../components/ResetPassword';
 
 import UsuariosOffline from '../components/UsuariosOffline';
 import PerfilSeguroOffline from '../components/PerfilSeguroOffline';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import Geolocalizacion from '../components/Geolocalizacion';
 
 

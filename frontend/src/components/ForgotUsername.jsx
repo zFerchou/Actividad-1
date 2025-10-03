@@ -1,7 +1,7 @@
 // src/components/ForgotUsername.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import '../styles/AuthForms.css';
 
 const ForgotUsername = () => {

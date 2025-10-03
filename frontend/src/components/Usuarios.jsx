@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { usersService } from '../services/api';
-import authService from '../services/auth';
+import authService from '../services/authService';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import '../styles/Usuarios.css';
 

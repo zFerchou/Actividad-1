@@ -1,12 +1,9 @@
-// controllers/authController.js
 const Usuario = require('../models/Usuario');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken');
-const config = require('../config');
-require('dotenv').config(); // Carga variables de entorno desde .env
+require('dotenv').config();
 
-// Configurar transporter de Nodemailer correctamente
+// Configuración de correo
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE || 'Gmail',
   auth: {
@@ -21,54 +18,23 @@ const transporter = nodemailer.createTransport({
 exports.forgotUsername = async (req, res) => {
   try {
     const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'El correo electrónico es requerido'
-      });
-    }
+    if (!email) return res.status(400).json({ success: false, message: 'Correo requerido' });
 
     const usuario = await Usuario.obtenerPorEmail(email);
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: 'No se encontró una cuenta con ese correo electrónico'
-      });
-    }
+    if (!usuario) return res.status(404).json({ success: false, message: 'No se encontró una cuenta con ese correo' });
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
       subject: 'Recuperación de nombre de usuario',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Recuperación de nombre de usuario</h2>
-          <p>Hola,</p>
-          <p>Has solicitado recuperar tu nombre de usuario.</p>
-          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Tu nombre de usuario es:</strong> ${usuario.nombre}</p>
-          </div>
-          <p>Si no solicitaste esta acción, por favor ignora este correo.</p>
-          <br>
-          <p>Saludos,<br>El equipo de soporte</p>
-        </div>
-      `
+      html: `<p>Tu nombre de usuario es: <strong>${usuario.nombre}</strong></p>`
     };
 
     await transporter.sendMail(mailOptions);
-
-    res.json({
-      success: true,
-      message: 'Se ha enviado tu nombre de usuario a tu correo electrónico'
-    });
-
+    res.json({ success: true, message: 'Se ha enviado tu nombre de usuario al correo' });
   } catch (error) {
-    console.error('Error en forgotUsername:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor al procesar la solicitud'
-    });
+    console.error('Error forgotUsername:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 };
 
@@ -78,174 +44,71 @@ exports.forgotUsername = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'El correo electrónico es requerido'
-      });
-    }
+    if (!email) return res.status(400).json({ success: false, message: 'Correo requerido' });
 
     const usuario = await Usuario.obtenerPorEmail(email);
     if (!usuario) {
-      // Por seguridad, no revelamos si el email existe o no
-      return res.json({
-        success: true,
-        message: 'Si el correo existe, se ha enviado un enlace de recuperación'
-      });
+      return res.json({ success: true, message: 'Si el correo existe, se ha enviado un enlace de recuperación' });
     }
 
-    // Generar token de recuperación
     const resetToken = crypto.randomBytes(32).toString('hex');
-    await Usuario.actualizarToken(email, resetToken);
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+    await Usuario.actualizarToken(email, resetToken, expiresAt);
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${encodeURIComponent(resetToken)}`;
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
       subject: 'Recuperación de contraseña',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Recuperación de contraseña</h2>
-          <p>Hola ${usuario.nombre},</p>
-          <p>Has solicitado restablecer tu contraseña.</p>
-          <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 5px; display: inline-block;">
-              Restablecer Contraseña
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px;">
-            <strong>Nota:</strong> Este enlace expirará en 1 hora.
-          </p>
-          <p>Si no solicitaste este cambio, por favor ignora este correo.</p>
-          <br>
-          <p>Saludos,<br>El equipo de soporte</p>
-        </div>
-      `
+      html: `<p>Haz clic <a href="${resetUrl}">aquí</a> para restablecer tu contraseña. Expira en 1 hora.</p>`
     };
 
     await transporter.sendMail(mailOptions);
-
-    res.json({
-      success: true,
-      message: 'Si el correo existe, se ha enviado un enlace de recuperación'
-    });
-
+    res.json({ success: true, message: 'Si el correo existe, se ha enviado un enlace de recuperación' });
   } catch (error) {
-    console.error('Error en forgotPassword:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor al procesar la solicitud'
-    });
+    console.error('Error forgotPassword:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 };
 
-// ------------------------
 // Restablecer contraseña
-// ------------------------
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const token = (req.body.token || req.query.token || '').trim();
+    const { newPassword } = req.body;
 
-    if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Token y nueva contraseña son requeridos'
-      });
-    }
+    if (!token || !newPassword) return res.status(400).json({ success: false, message: 'Token y nueva contraseña son requeridos' });
+    if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres' });
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'La contraseña debe tener al menos 6 caracteres'
-      });
-    }
-
-    const usuario = await Usuario.obtenerPorToken(token);
-    if (!usuario) {
-      return res.status(400).json({
-        success: false,
-        message: 'El token es inválido o ha expirado'
-      });
-    }
+    const decodedToken = decodeURIComponent(token);  // <-- DECODIFICAR
+    const usuario = await Usuario.obtenerPorToken(decodedToken);
+    if (!usuario) return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
 
     await Usuario.actualizarPassword(usuario.id, newPassword);
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: usuario.email,
-      subject: 'Contraseña restablecida exitosamente',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Contraseña restablecida</h2>
-          <p>Hola ${usuario.nombre},</p>
-          <p>Tu contraseña ha sido restablecida exitosamente.</p>
-          <p>Si no realizaste esta acción, contacta inmediatamente al equipo de soporte.</p>
-          <br>
-          <p>Saludos,<br>El equipo de soporte</p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.json({
-      success: true,
-      message: 'Contraseña restablecida exitosamente'
-    });
-
+    res.json({ success: true, message: 'Contraseña restablecida exitosamente' });
   } catch (error) {
-    console.error('Error en resetPassword:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor al restablecer la contraseña'
-    });
+    console.error('Error resetPassword:', error);
+    res.status(500).json({ success: false, message: 'Error interno al restablecer la contraseña' });
   }
 };
 
-// ------------------------
-// Verificar token válido
-// ------------------------
+// Verificar token
 exports.verifyToken = async (req, res) => {
   try {
-    const { token } = req.params;
+    const token = (req.params.token || req.body.token || '').trim();
+    if (!token) return res.status(400).json({ success: false, message: 'No hay token para verificar' });
 
-    if (!token) {
-      return res.status(400).json({ success: false, message: 'Token requerido' });
-    }
+    console.log('Token recibido en verifyToken:', token);
 
-    // Si tiene formato JWT (tres segmentos separados por puntos), intenta verificarlo
-    if (token.split('.').length === 3) {
-      try {
-        const decoded = jwt.verify(token, config.jwtSecret);
-        return res.json({
-          success: true,
-          message: 'Token válido (JWT)',
-          email: decoded.email || null,
-          userId: decoded.userId || null,
-          rol: decoded.rol || null,
-          exp: decoded.exp || null,
-        });
-      } catch (err) {
-        const msg = err.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido';
-        return res.status(400).json({ success: false, message: msg });
-      }
-    }
+    const decodedToken = decodeURIComponent(token);  // <-- DECODIFICAR
+    const usuario = await Usuario.obtenerPorToken(decodedToken);
+    console.log('Usuario encontrado:', usuario);
 
-    // Si no parece JWT, tratarlo como token de recuperación almacenado en BD
-    const usuario = await Usuario.obtenerPorToken(token);
-    if (!usuario) {
-      return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
-    }
+    if (!usuario) return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
 
-    return res.json({ success: true, message: 'Token válido (recuperación)', email: usuario.email });
-
+    res.json({ success: true, message: 'Token válido', email: usuario.email });
   } catch (error) {
-    console.error('Error en verifyToken:', error);
-    return res.status(500).json({ success: false, message: 'Error al verificar el token' });
+    console.error('Error verifyToken:', error);
+    res.status(500).json({ success: false, message: 'Error al verificar el token' });
   }
 };

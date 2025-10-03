@@ -1,4 +1,4 @@
-import authService from './auth';
+import authService from './authService';
 
 const API_URL = 'http://localhost:8080'; // Usar proxy para evitar CORS
 

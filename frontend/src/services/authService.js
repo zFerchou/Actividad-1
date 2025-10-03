@@ -1,4 +1,3 @@
-// src/services/auth.js
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/auth';
@@ -9,7 +8,6 @@ const authService = {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('autenticado', 'true');
-    // Al autenticarse online, asegúrate de salir de cualquier modo offline previo
     localStorage.removeItem('offlineMode');
   },
 
@@ -29,9 +27,15 @@ const authService = {
     window.location.href = '/login';
   },
 
-  // Login
+  // Login con email y contraseña
   login: async (email, password) => {
     const response = await axios.post(`${API_URL}/login`, { email, password });
+    return response.data;
+  },
+
+  // Verificación de código 2FA
+  verify2FA: async (userId, codigo) => {
+    const response = await axios.post(`${API_URL}/verify-2fa`, { userId, codigo });
     const { token, user } = response.data;
     authService.setAuthData(token, user);
     return response.data;
@@ -43,63 +47,61 @@ const authService = {
     return response.data;
   },
 
-  // Recuperar contraseña
+  // Solicitar enlace para restablecer contraseña
   forgotPassword: async (email) => {
     const response = await axios.post(`${API_URL}/forgot-password`, { email });
     return response.data;
   },
 
-  // Restablecer contraseña
+  // Restablecer contraseña con token
   resetPassword: async (token, newPassword) => {
-    const response = await axios.post(`${API_URL}/reset-password`, { token, newPassword });
+    if (!token) throw new Error('No hay token para restablecer la contraseña');
+    const encodedToken = encodeURIComponent(token);
+    const response = await axios.post(`${API_URL}/reset-password`, { token: encodedToken, newPassword });
     return response.data;
   },
 
-  // Verificar token válido usando el endpoint del backend
-  verifyToken: async () => {
-    const token = authService.getToken();
+  // Verificar token de recuperación
+  verifyToken: async (token) => {
     if (!token) throw new Error('No hay token para verificar');
-    const response = await axios.get(`${API_URL}/verify-token/${token}`);
+    const encodedToken = encodeURIComponent(token);
+    const response = await axios.get(`${API_URL}/verify-token/${encodedToken}`);
     return response.data;
   },
 
-  // ===== Utilidades Offline =====
+  // Decodificar JWT
   parseJwt: (token) => {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      return JSON.parse(jsonPayload);
-    } catch (e) {
+      return JSON.parse(decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join('')));
+    } catch {
       return null;
     }
   },
 
+  // Obtener expiración del token
   getTokenExp: () => {
     const token = authService.getToken();
     if (!token) return null;
     const payload = authService.parseJwt(token);
-    return payload?.exp || null; // segundos desde epoch
+    return payload?.exp || null;
   },
 
+  // Verificar si el token sigue siendo válido
   isTokenValid: () => {
     const exp = authService.getTokenExp();
     if (!exp) return false;
-    const nowSec = Math.floor(Date.now() / 1000);
-    return nowSec < exp;
+    return Math.floor(Date.now() / 1000) < exp;
   },
 
+  // Modo offline
   enterOfflineMode: () => localStorage.setItem('offlineMode', 'true'),
   exitOfflineMode: () => localStorage.removeItem('offlineMode'),
   isOfflineMode: () => localStorage.getItem('offlineMode') === 'true',
-
-  canLoginOffline: () => {
-    const user = authService.getCurrentUser();
-    const hasValidToken = authService.isTokenValid();
-    return !!user && hasValidToken;
-  },
+  canLoginOffline: () => !!authService.getCurrentUser() && authService.isTokenValid(),
 };
 
 export default authService;
