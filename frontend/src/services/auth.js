@@ -9,6 +9,8 @@ const authService = {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('autenticado', 'true');
+    // Al autenticarse online, asegúrate de salir de cualquier modo offline previo
+    localStorage.removeItem('offlineMode');
   },
 
   getToken: () => localStorage.getItem('token'),
@@ -59,6 +61,44 @@ const authService = {
     if (!token) throw new Error('No hay token para verificar');
     const response = await axios.get(`${API_URL}/verify-token/${token}`);
     return response.data;
+  },
+
+  // ===== Utilidades Offline =====
+  parseJwt: (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  getTokenExp: () => {
+    const token = authService.getToken();
+    if (!token) return null;
+    const payload = authService.parseJwt(token);
+    return payload?.exp || null; // segundos desde epoch
+  },
+
+  isTokenValid: () => {
+    const exp = authService.getTokenExp();
+    if (!exp) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
+    return nowSec < exp;
+  },
+
+  enterOfflineMode: () => localStorage.setItem('offlineMode', 'true'),
+  exitOfflineMode: () => localStorage.removeItem('offlineMode'),
+  isOfflineMode: () => localStorage.getItem('offlineMode') === 'true',
+
+  canLoginOffline: () => {
+    const user = authService.getCurrentUser();
+    const hasValidToken = authService.isTokenValid();
+    return !!user && hasValidToken;
   },
 };
 

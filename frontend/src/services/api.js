@@ -121,6 +121,19 @@ export const notificacionesAPI = {
   eliminarExpiradas: async () => authFetch('/notificaciones/expiradas', { method: 'DELETE' }),
 };
 
+// ----------------- Geolocalización -----------------
+export const geolocAPI = {
+  guardarLogin: async ({ lat, lng, accuracy, fuente = 'navigator' }) =>
+    authFetch('/geoloc/login', { method: 'POST', body: JSON.stringify({ lat, lng, accuracy, fuente }) }),
+  track: async ({ lat, lng, accuracy, fuente = 'navigator' }) =>
+    authFetch('/geoloc/track', { method: 'POST', body: JSON.stringify({ lat, lng, accuracy, fuente }) }),
+  ultima: async () => authFetch('/geoloc/last'),
+  historial: async (params = {}) => {
+    const q = new URLSearchParams(params);
+    return authFetch(`/geoloc/historial?${q.toString()}`);
+  },
+};
+
 // Manejo de errores
 export const handleApiError = (error, defaultMessage = 'Error en la operación') => {
   console.error('Error de API:', error);

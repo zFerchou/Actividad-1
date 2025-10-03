@@ -14,6 +14,9 @@ import ForgotPassword from '../components/ForgotPassword';
 import ResetPassword from '../components/ResetPassword';
 
 import UsuariosOffline from '../components/UsuariosOffline';
+import PerfilSeguroOffline from '../components/PerfilSeguroOffline';
+import authService from '../services/auth';
+import Geolocalizacion from '../components/Geolocalizacion';
 
 
 const AppRoutes = () => {
@@ -37,6 +40,10 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/autenticacion" element={<AutenticacionBiometrica />} />
+      {/* Acceso a perfil en modo offline (pre-login) */}
+      <Route path="/perfil-offline" element={
+        authService.canLoginOffline() ? <PerfilSeguroOffline /> : <Navigate to="/login" replace />
+      } />
       
       {/* Nuevas rutas de recuperación */}
       <Route path="/forgot-username" element={<ForgotUsername />} />
@@ -62,6 +69,11 @@ const AppRoutes = () => {
       <Route path="/perfil" element={
         <ProtectedRoute requireBiometric={true}>
           <PerfilSeguro />
+        </ProtectedRoute>
+      } />
+      <Route path="/geolocalizacion" element={
+        <ProtectedRoute>
+          <Geolocalizacion />
         </ProtectedRoute>
       } />
 

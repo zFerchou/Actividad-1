@@ -6,9 +6,10 @@ import authService from '../services/auth';
 const ProtectedRoute = ({ children, requiredRoles = [], requireBiometric = false }) => {
   const user = authService.getCurrentUser();
   const isAuthenticated = authService.isAuthenticated();
+  const tokenValid = authService.isTokenValid();
 
   // 1️⃣ Verificar autenticación
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !user || !tokenValid) {
     authService.logout(); // Asegura limpieza de sesión si algo falla
     return <Navigate to="/login" replace />;
   }
