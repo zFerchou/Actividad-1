@@ -2,6 +2,8 @@
 const Usuario = require('../models/Usuario');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
+const config = require('../config');
 require('dotenv').config(); // Carga variables de entorno desde .env
 
 // Configurar transporter de Nodemailer correctamente
@@ -212,25 +214,38 @@ exports.verifyToken = async (req, res) => {
   try {
     const { token } = req.params;
 
-    const usuario = await Usuario.obtenerPorToken(token);
-    if (!usuario) {
-      return res.status(400).json({
-        success: false,
-        message: 'Token inválido o expirado'
-      });
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token requerido' });
     }
 
-    res.json({
-      success: true,
-      message: 'Token válido',
-      email: usuario.email
-    });
+    // Si tiene formato JWT (tres segmentos separados por puntos), intenta verificarlo
+    if (token.split('.').length === 3) {
+      try {
+        const decoded = jwt.verify(token, config.jwtSecret);
+        return res.json({
+          success: true,
+          message: 'Token válido (JWT)',
+          email: decoded.email || null,
+          userId: decoded.userId || null,
+          rol: decoded.rol || null,
+          exp: decoded.exp || null,
+        });
+      } catch (err) {
+        const msg = err.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido';
+        return res.status(400).json({ success: false, message: msg });
+      }
+    }
+
+    // Si no parece JWT, tratarlo como token de recuperación almacenado en BD
+    const usuario = await Usuario.obtenerPorToken(token);
+    if (!usuario) {
+      return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+    }
+
+    return res.json({ success: true, message: 'Token válido (recuperación)', email: usuario.email });
 
   } catch (error) {
     console.error('Error en verifyToken:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al verificar el token'
-    });
+    return res.status(500).json({ success: false, message: 'Error al verificar el token' });
   }
 };

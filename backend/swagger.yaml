@@ -60,18 +60,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Require2FAResponse'
-        '401':
-          description: Credenciales inválidas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Error al enviar código 2FA
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /auth/verify-2fa:
     post:
       tags: [Autenticación]
@@ -95,36 +83,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSuccess'
-        '400':
-          description: Código 2FA no solicitado o expirado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Código incorrecto
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Error interno
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /auth/verify-token/{token}:
     get:
       tags: [Autenticación]
-      summary: Verificar token
-      description: Verifica si un token es válido en el servidor. El cliente puede validar expiración offline leyendo el campo exp del JWT.
+      summary: Verificar token (JWT o recuperación)
+      description: Acepta tanto un JWT emitido tras 2FA como un token de recuperación almacenado en BD. Para JWT, valida firma y expiración con el secreto del servidor.
       parameters:
         - in: path
           name: token
           required: true
           schema:
             type: string
-          description: Token JWT emitido tras completar 2FA
+          description: Token JWT emitido tras completar 2FA o token de recuperación
+      x-codeSamples:
+        - lang: curl
+          label: JWT
+          source: |
+            curl -X GET "http://localhost:8080/auth/verify-token/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx.yyy"
       responses:
         '200':
           description: Token válido
@@ -132,8 +107,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyTokenResponse'
-        '400':
-          description: Token inválido o expirado
+  /auth/me:
+    get:
+      tags: [Autenticación]
+      summary: Obtener datos del usuario autenticado (debug)
+      description: Requiere Bearer JWT. Devuelve las claims decodificadas del token para verificar que el Authorization se esté enviando correctamente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: false
+          schema:
+            type: string
+          description: Encabezado Authorization. Úsalo si no ves el botón "Authorize".
+          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx.yyy
+      responses:
+        '200':
+          description: Token válido, usuario extraído
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    type: object
+        '401':
+          description: No autenticado / token inválido
           content:
             application/json:
               schema:
@@ -186,12 +188,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HistorialResponse'
-        '500':
-          description: Error al obtener historial
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /dashboard/estadisticas:
     get:
       tags: [Reportes]
@@ -203,12 +199,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadisticasResponse'
-        '500':
-          description: Error obteniendo estadísticas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /dashboard/actividad:
     get:
       tags: [Reportes]
@@ -222,12 +212,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Interaccion'
-        '500':
-          description: Error obteniendo actividad
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /dashboard/reportes:
     get:
       tags: [Reportes]
@@ -291,6 +275,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GeoInput'
+            examples:
+              ejemplo:
+                value:
+                  lat: -33.4489
+                  lng: -70.6693
+                  accuracy: 15.5
+                  fuente: navigator
       responses:
         '201':
           description: Ubicación guardada
@@ -298,12 +289,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoRecord'
-        '401':
-          description: No autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /geoloc/track:
     post:
       tags: [Geolocalización]
@@ -324,12 +309,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GeoRecord'
-        '401':
-          description: No autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /geoloc/last:
     get:
       tags: [Geolocalización]
@@ -345,12 +324,6 @@ paths:
                 oneOf:
                   - $ref: '#/components/schemas/GeoRecord'
                   - type: 'null'
-        '401':
-          description: No autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /geoloc/historial:
     get:
       tags: [Geolocalización]
@@ -382,24 +355,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GeoRecord'
-        '401':
-          description: No autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '400':
-          description: Parámetros inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Error generando reporte
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -429,12 +384,6 @@ components:
         userId:
           type: integer
           example: 1
-        email:
-          type: string
-          format: email
-          example: usuario@ejemplo.com
-        nombre:
-          type: string
           example: Juan Pérez
     Login2FARequest:
       type: object
