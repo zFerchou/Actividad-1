@@ -4,15 +4,13 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
-import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import '../styles/Navigation.css';
 import { useNotificaciones } from '../hooks/useNotificaciones';
 
-// Simulación del servicio de autenticación (debes reemplazar con tu implementación real)
+// Simulación del servicio de autenticación (reemplazar con tu implementación real)
 const authService = {
   getCurrentUser: () => {
-    // En una aplicación real, esto obtendría el usuario del localStorage o contexto
     return JSON.parse(localStorage.getItem('user')) || null;
   },
   hasRole: (role) => {
@@ -32,7 +30,7 @@ const Navigation = () => {
   const { noLeidas } = useNotificaciones(usuarioId);
 
   useEffect(() => {
-    // Verificar el usuario al cargar y cuando cambia la ubicación
+    // Verificar usuario al cargar o al cambiar de página
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
   }, [location]);
@@ -53,9 +51,14 @@ const Navigation = () => {
   return (
     <Navbar expand="lg" className="bg-body-tertiary mb-3 custom-navbar">
       <Container fluid>
-        <Navbar.Brand href="#" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>
+        <Navbar.Brand
+          href="#"
+          onClick={() => navigate('/')}
+          style={{ cursor: 'pointer' }}
+        >
           🛡️ Sistema Seguro
         </Navbar.Brand>
+
         <Navbar.Toggle aria-controls="offcanvasNavbar-expand-lg" />
         <Navbar.Offcanvas
           id="offcanvasNavbar-expand-lg"
@@ -69,6 +72,7 @@ const Navigation = () => {
           </Offcanvas.Header>
           <Offcanvas.Body>
             <Nav className="justify-content-start flex-grow-1 pe-3">
+              {/* Notificaciones */}
               <Nav.Link 
                 className={isActive('/notificaciones') ? 'active' : ''}
                 onClick={() => navigate('/notificaciones')}
@@ -92,39 +96,49 @@ const Navigation = () => {
                   }}>{noLeidas}</span>
                 )}
               </Nav.Link>
-              <Nav.Link 
+
+              {/* Inicio */}
+              <Nav.Link
                 className={isActive('/') ? 'active' : ''}
                 onClick={() => navigate('/')}
-                style={{cursor: 'pointer'}}
+                style={{ cursor: 'pointer' }}
               >
                 🏠 Inicio
               </Nav.Link>
-              <Nav.Link 
+
+              {/* Perfil */}
+              <Nav.Link
                 className={isActive('/perfil') ? 'active' : ''}
                 onClick={() => navigate('/autenticacion')}
-                style={{cursor: 'pointer'}}
+                style={{ cursor: 'pointer' }}
               >
                 👤 Perfil
               </Nav.Link>
-              
+
+              {/* Administración */}
               {authService.hasRole('admin') && (
-                <Nav.Link 
+                <Nav.Link
                   className={isActive('/usuarios') ? 'active' : ''}
                   onClick={() => navigate('/usuarios')}
-                  style={{cursor: 'pointer'}}
+                  style={{ cursor: 'pointer' }}
                 >
                   👥 Gestión de Usuarios
                 </Nav.Link>
               )}
-              
             </Nav>
-            
-            <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3">
+
+            {/* Sección derecha con saludo y logout */}
+            <div className="d-flex align-items-center gap-3 mt-3 mt-lg-0">
               <span className="text-nowrap">
-                👋 Hola, {user.nombre} <span className="user-role">({user.rol})</span>
+                👋 Hola, {user.nombre}{' '}
+                <span className="user-role">({user.rol})</span>
               </span>
-              <Button variant="outline-danger" size="sm" onClick={handleLogout}>
-                 Cerrar Sesión
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={handleLogout}
+              >
+                Cerrar Sesión
               </Button>
             </div>
           </Offcanvas.Body>

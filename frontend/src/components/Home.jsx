@@ -1,7 +1,7 @@
 import React from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/auth';
+import authService from '../services/authService';
 import Notificaciones from './Notificaciones';
 import '../styles/Home.css';
 

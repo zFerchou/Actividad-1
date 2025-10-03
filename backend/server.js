@@ -8,6 +8,9 @@ const usuariosRoutes = require('./routes/usuarios');
 const authRoutes = require('./routes/auth');
 const perfilRoutes = require('./routes/perfil'); // ← IMPORTACIÓN AÑADIDA
 const notificacionesRoutes = require('./routes/notificaciones');
+const historialRoutes = require('./routes/historial');
+const dashboardRoutes = require('./routes/dashboard');
+const geolocRoutes = require('./routes/geoloc');
 
 const app = express();
 
@@ -27,7 +30,10 @@ app.use(express.static('public'));
 app.use('/usuarios', usuariosRoutes);
 app.use('/auth', authRoutes);
 app.use('/perfil', perfilRoutes); // ← RUTA AÑADIDA
-app.use('/notificaciones', notificacionesRoutes);
+app.use('/notificaciones', notificacionesRoutes); // mantener
+app.use('/historial', historialRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/geoloc', geolocRoutes);
 
 // Swagger documentation
 const swaggerDocument = YAML.load('./swagger.yaml');
@@ -55,25 +61,19 @@ app.use((req, res) => {
       '/auth', 
       '/perfil',
       '/notificaciones',
+      '/historial',
+      '/dashboard',
+      '/geoloc',
       '/docs',
-      '/health'
+      '/health',
+      '/login'
     ]
   });
 });
 
-// SOCKET.IO refactor
-const http = require('http');
-const server = http.createServer(app);
-const { initSocket } = require('./socket');
-initSocket(server);
 
 // Iniciar servidor
-server.listen(config.server.port, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${config.server.port}`);
-  console.log(`👥 API de usuarios: http://localhost:${config.server.port}/usuarios`);
-  console.log(`🔐 API de auth: http://localhost:${config.server.port}/auth`);
-  console.log(`👤 API de perfil: http://localhost:${config.server.port}/perfil`);
-  console.log(`🔔 API de notificaciones: http://localhost:${config.server.port}/notificaciones`);
-  console.log(`📚 Documentación Swagger: http://localhost:${config.server.port}/docs`);
-  console.log(`❤️  Health check: http://localhost:${config.server.port}/health`);
+const PORT = config.server?.port || 8080;
+app.listen(PORT, () => {
+  console.log(`Servidor backend escuchando en http://localhost:${PORT}`);
 });

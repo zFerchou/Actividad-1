@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/AutenticacionBiometrica.css';
 
 const AutenticacionBiometrica = () => {
-  const [metodoSeleccionado, setMetodoSeleccionado] = useState('');
   const [pin, setPin] = useState('');
+  const [userPassword, setUserPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleMetodoSeleccion = (metodo) => {
-    setMetodoSeleccionado(metodo);
-  };
+  useEffect(() => {
+    // Obtenemos la contraseña del usuario logueado desde localStorage
+    const user = JSON.parse(localStorage.getItem('user')) || null;
+    if (user) {
+      setUserPassword(user.password);
+    }
+  }, []);
 
   const autenticar = () => {
     localStorage.setItem('autenticado', 'true');
@@ -18,56 +22,26 @@ const AutenticacionBiometrica = () => {
   };
 
   const verificarPin = () => {
-    if (pin === '1234') {
+    if (pin === userPassword) {
       autenticar();
     } else {
       alert('PIN incorrecto');
     }
   };
 
-  const simularHuellaDigital = () => {
-    setTimeout(autenticar, 1000);
-  };
-
-  const simularReconocimientoFacial = () => {
-    setTimeout(autenticar, 1500);
-  };
-
   return (
-    <div className="autenticacion-container">
-      <h2>Autenticación Biométrica</h2>
-      <div className="metodos-autenticacion">
-        <h3>Selecciona tu método:</h3>
-        <button onClick={() => handleMetodoSeleccion('huella')}>📋 Huella Digital</button>
-        <button onClick={() => handleMetodoSeleccion('facial')}>📷 Reconocimiento Facial</button>
-        <button onClick={() => handleMetodoSeleccion('pin')}>🔒 PIN</button>
-
-        {metodoSeleccionado === 'pin' && (
-          <div>
-            <input
-              type="password"
-              placeholder="Ingresa tu PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              maxLength={4}
-            />
-            <button onClick={verificarPin}>Verificar PIN</button>
-          </div>
-        )}
-
-        {metodoSeleccionado === 'huella' && (
-          <div>
-            <p>Coloca tu dedo...</p>
-            <button onClick={simularHuellaDigital}>Simular Huella</button>
-          </div>
-        )}
-
-        {metodoSeleccionado === 'facial' && (
-          <div>
-            <p>Mira a la cámara...</p>
-            <button onClick={simularReconocimientoFacial}>Simular Reconocimiento Facial</button>
-          </div>
-        )}
+    <div className="autenticacion-container">a
+      <h2>Autenticación con PIN</h2>
+      <div className="pin-container">
+        <input
+          type="password"
+          placeholder="Ingresa tu PIN"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+        />
+        <button className="btn-pin" onClick={verificarPin}>
+          Verificar PIN
+        </button>
       </div>
     </div>
   );

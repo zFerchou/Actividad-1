@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useNavigate } from 'react-router-dom';
 import { profileService } from '../services/api'; // ← CAMBIADO: Importar profileService en lugar de authAPI
-import authService from '../services/auth';
+import authService from '../services/authService';
 import '../styles/PerfilSeguro.css';
 
 const PerfilSeguro = () => {

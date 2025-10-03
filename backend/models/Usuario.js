@@ -1,30 +1,69 @@
-const { Pool } = require('pg');
-const config = require('../config');
-
-const pool = new Pool(config.db);
+const pool = require('../database/db');
+const bcrypt = require('bcryptjs');
 
 class Usuario {
-  static async obtenerTodos() {
+
+  // ------------------------
+  // Obtener usuario por correo
+  // ------------------------
+  static async obtenerPorEmail(email) {
     const res = await pool.query(
-      'SELECT id, nombre, email, rol, telefono, direccion FROM usuarios ORDER BY id'
+      'SELECT * FROM usuarios WHERE email = $1',
+      [email.trim()]
     );
-    return res.rows;
+    return res.rows[0] || null;
   }
 
-  static async crear(nombre, email, password, rol, telefono, direccion) {
-    const res = await pool.query(
-      `INSERT INTO usuarios (nombre, email, password, rol, telefono, direccion) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id, nombre, email, rol, telefono, direccion`,
-      [nombre, email, password, rol, telefono, direccion]
-    );
-    return res.rows[0];
-  }
+  // ------------------------
+  // Guardar token de recuperación y expiración
+  // ------------------------
+  static async actualizarToken(email, token) {
+  const expiryTime = new Date(Date.now() + 3600000); // 1 hora
+  const expiryUTC = expiryTime.toISOString(); // UTC
+  const res = await pool.query(
+    `UPDATE usuarios
+     SET reset_password_token = $1,
+         reset_password_expires = $2
+     WHERE email = $3
+     RETURNING id, nombre, email`,
+    [token, expiryUTC, email]
+  );
+  return res.rows[0];
+}
 
-  static async obtenerEmailPorId(id) {
-    const res = await pool.query('SELECT email FROM usuarios WHERE id = $1', [id]);
-    return res.rows[0]?.email;
+// ------------------------
+// Obtener usuario por token válido
+// ------------------------
+static async obtenerPorToken(token) {
+  const query = `
+    SELECT * 
+    FROM usuarios 
+    WHERE reset_password_token = $1 
+      AND reset_password_expires > NOW()
+  `;
+  const res = await pool.query(query, [token]);
+  return res.rows[0] || null;
+}
+
+
+  // ------------------------
+  // Actualizar contraseña y limpiar token
+  // ------------------------
+  static async actualizarPassword(id, newPassword) {
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const res = await pool.query(
+      `UPDATE usuarios 
+       SET password = $1,
+           reset_password_token = NULL,
+           reset_password_expires = NULL
+       WHERE id = $2
+       RETURNING id, nombre, email`,
+      [hashedPassword, id]
+    );
+
+    return res.rows[0] || null;
   }
 }
 
 module.exports = Usuario;
+

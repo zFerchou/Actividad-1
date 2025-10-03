@@ -1,23 +1,28 @@
+// src/routes/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { authService } from '../services/auth';
+import authService from '../services/authService';
 
 const ProtectedRoute = ({ children, requiredRoles = [], requireBiometric = false }) => {
-  const isAuthenticated = authService.isAuthenticated();
   const user = authService.getCurrentUser();
+  const isAuthenticated = authService.isAuthenticated();
+  const tokenValid = authService.isTokenValid();
 
-  if (!isAuthenticated) {
+  // 1️⃣ Verificar autenticación
+  if (!isAuthenticated || !user || !tokenValid) {
+    authService.logout(); // Asegura limpieza de sesión si algo falla
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRoles.length > 0 && user) {
-    const hasRequiredRole = requiredRoles.includes(user.rol);
-    if (!hasRequiredRole) {
+  // 2️⃣ Verificación de roles
+  if (requiredRoles.length > 0) {
+    const hasRole = requiredRoles.includes(user.rol);
+    if (!hasRole) {
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  // Verificación de biometría
+  // 3️⃣ Verificación de biometría
   if (requireBiometric) {
     const biometricPassed = localStorage.getItem('autenticado') === 'true';
     if (!biometricPassed) {
@@ -25,6 +30,7 @@ const ProtectedRoute = ({ children, requiredRoles = [], requireBiometric = false
     }
   }
 
+  // 4️⃣ Todo correcto, renderizar hijos
   return children;
 };
 

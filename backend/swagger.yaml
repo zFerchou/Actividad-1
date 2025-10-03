@@ -1,12 +1,34 @@
 openapi: 3.0.0
 info:
-  title: API de Ejemplo
+  title: Mi API Backend
   version: 1.0.0
   description: Esta es una API mínima de ejemplo para la documentación.
+  x-offlineAuth:
+    summary: Acceso offline con credenciales en caché
+    details:
+      - El usuario debe haber iniciado sesión previamente en línea y haber recibido un JWT válido (24h).
+      - La app cliente almacena localmente el token y los datos básicos del usuario.
+      - Si no hay Internet, el cliente valida localmente que el token no haya expirado (usando su campo exp) y permite acceso en modo solo lectura.
+      - Al reconectar, el cliente vuelve a sincronizar datos y, si el token expiró, exige un nuevo login online.
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor local
+
+tags:
+  - name: Autenticación
+    description: Endpoints de login con 2FA y validación de token
+  - name: Historial
+    description: Historial de compras/servicios por usuario
+  - name: Reportes
+    description: Reportes de ventas e interacciones
+  - name: Geolocalización
+    description: Endpoints para guardar y consultar ubicaciones del usuario
+
 paths:
-  /hello:
+  /usuarios:
     get:
-      summary: Devuelve un mensaje de saludo
+      summary: Lista de usuarios
       responses:
         '200':
           description: Respuesta exitosa
@@ -18,3 +40,677 @@ paths:
                   message:
                     type: string
                     example: Hola, mundo!
+
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión (paso 1)
+      description: Valida email y contraseña. Si son correctos, envía un código 2FA por correo y responde indicando que se requiere 2FA.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              ejemplo:
+                value:
+                  email: usuario@ejemplo.com
+                  password: MiSecreta123
+      responses:
+        '200':
+          description: Se requiere verificación 2FA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Require2FAResponse'
+
+  /auth/verify-2fa:
+    post:
+      tags: [Autenticación]
+      summary: Verificar código 2FA (paso 2)
+      description: Valida el código 2FA. Si es correcto, emite el JWT (expira en 24h) y retorna datos básicos del usuario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login2FARequest'
+            examples:
+              ejemplo:
+                value:
+                  userId: 1
+                  codigo: "123456"
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccess'
+
+  /auth/verify-token/{token}:
+    get:
+      tags: [Autenticación]
+      summary: Verificar token (JWT o recuperación)
+      description: Acepta tanto un JWT emitido tras 2FA como un token de recuperación almacenado en BD. Para JWT, valida firma y expiración con el secreto del servidor.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Token JWT emitido tras completar 2FA o token de recuperación
+      responses:
+        '200':
+          description: Token válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyTokenResponse'
+
+  /auth/me:
+    get:
+      tags: [Autenticación]
+      summary: Obtener datos del usuario autenticado (debug)
+      description: Requiere Bearer JWT. Devuelve las claims decodificadas del token para verificar que el Authorization se esté enviando correctamente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: false
+          schema:
+            type: string
+          description: Encabezado Authorization. Úsalo si no ves el botón "Authorize".
+          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx.yyy
+      responses:
+        '200':
+          description: Token válido, usuario extraído
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    type: object
+        '401':
+          description: No autenticado / token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-username:
+    post:
+      tags: [Autenticación]
+      summary: Recuperar nombre de usuario
+      description: Envía el nombre de usuario al correo asociado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        '200':
+          description: Nombre de usuario enviado al correo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Falta el correo electrónico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Correo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags: [Autenticación]
+      summary: Recuperar contraseña
+      description: Envía un enlace de restablecimiento al correo electrónico si existe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        '200':
+          description: Si el correo existe, se envió un enlace de recuperación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Falta el correo electrónico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags: [Autenticación]
+      summary: Restablecer contraseña
+      description: Permite crear una nueva contraseña usando un token de recuperación válido.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+              required: [token, newPassword]
+      responses:
+        '200':
+          description: Contraseña restablecida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericSuccess'
+        '400':
+          description: Token inválido, expirado o contraseña débil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /historial/{usuarioId}:
+    get:
+      tags: [Historial]
+      summary: Obtener historial de compras/servicios del usuario
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: tipoProducto
+          schema:
+            type: string
+        - in: query
+          name: estado
+          schema:
+            type: string
+            example: completado
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [fecha, monto]
+            default: fecha
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Historial obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialResponse'
+
+  /dashboard/estadisticas:
+    get:
+      tags: [Reportes]
+      summary: Estadísticas generales para dashboard
+      responses:
+        '200':
+          description: Estadísticas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadisticasResponse'
+
+  /dashboard/actividad:
+    get:
+      tags: [Reportes]
+      summary: Actividad reciente de usuarios
+      responses:
+        '200':
+          description: Lista de interacciones recientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Interaccion'
+
+  /dashboard/reportes:
+    get:
+      tags: [Reportes]
+      summary: Generar reportes de ventas o interacciones
+      parameters:
+        - in: query
+          name: tipo
+          required: true
+          schema:
+            type: string
+            enum: [ventas, interacciones]
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: productoId
+          schema:
+            type: integer
+        - in: query
+          name: sucursal
+          schema:
+            type: string
+        - in: query
+          name: formato
+          schema:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+      responses:
+        '200':
+          description: Reporte generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteResponse'
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /geoloc/login:
+    post:
+      tags: [Geolocalización]
+      summary: Guardar ubicación al iniciar sesión
+      description: El cliente envía lat/lng justo después del login. Requiere Bearer JWT.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoInput'
+            examples:
+              ejemplo:
+                value:
+                  lat: -33.4489
+                  lng: -70.6693
+                  accuracy: 15.5
+                  fuente: navigator
+      responses:
+        '201':
+          description: Ubicación guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRecord'
+
+  /geoloc/track:
+    post:
+      tags: [Geolocalización]
+      summary: Guardar tracking en tiempo real
+      description: El cliente envía posiciones periódicamente (navigator.geolocation.watchPosition). Requiere Bearer JWT.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoInput'
+      responses:
+        '201':
+          description: Ubicación guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRecord'
+
+  /geoloc/last:
+    get:
+      tags: [Geolocalización]
+      summary: Obtener última ubicación del usuario
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Última ubicación o null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GeoRecord'
+                  - type: object
+                    nullable: true
+
+  /geoloc/historial:
+    get:
+      tags: [Geolocalización]
+      summary: Obtener historial de ubicaciones
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [login, tracking]
+      responses:
+        '200':
+          description: Lista de ubicaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeoRecord'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required: [email, password]
+
+    Require2FAResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        require2FA:
+          type: boolean
+          example: true
+        userId:
+          type: integer
+          example: 1
+
+    Login2FARequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        codigo:
+          type: string
+          description: Código de 6 dígitos
+      required: [userId, codigo]
+
+    AuthSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT con expiración de 24 horas (campo exp)
+        user:
+          $ref: '#/components/schemas/User'
+
+    VerifyTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Token válido
+        email:
+          type: string
+          format: email
+          example: usuario@ejemplo.com
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: usuario@ejemplo.com
+        rol:
+          type: string
+          example: user
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Mensaje de error
+
+    GenericSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operación completada correctamente
+
+    GeoInput:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: float
+          example: -33.4489
+        lng:
+          type: number
+          format: float
+          example: -70.6693
+        accuracy:
+          type: number
+          format: float
+          example: 15.5
+        fuente:
+          type: string
+          example: navigator
+
+    GeoRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        usuario_id:
+          type: integer
+        latitud:
+          type: number
+          format: float
+        longitud:
+          type: number
+          format: float
+        precision_metros:
+          type: number
+          format: float
+          nullable: true
+        fuente:
+          type: string
+          example: navigator
+        tipo:
+          type: string
+          example: login
+        creado_en:
+          type: string
+          format: date-time
+
+    HistorialResponse:
+      type: object
+      properties:
+        usuarioId:
+          type: integer
+        total:
+          type: integer
+        compras:
+          type: array
+          items:
+            $ref: '#/components/schemas/Compra'
+
+    Compra:
+      type: object
+      properties:
+        id:
+          type: integer
+        producto_id:
+          type: integer
+        producto_nombre:
+          type: string
+        cantidad:
+          type: integer
+        precio_unitario:
+          type: number
+          format: float
+        total:
+          type: number
+          format: float
+        estado:
+          type: string
+          example: completado
+        tipo_producto:
+          type: string
+        fecha:
+          type: string
+          format: date-time
+
+    EstadisticasResponse:
+      type: object
+      properties:
+        ventasPorProducto:
+          type: array
+          items:
+            type: object
+            properties:
+              producto_id: { type: integer }
+              producto_nombre: { type: string }
+              sucursal: { type: string }
+              unidades: { type: integer }
+              ventas: { type: number, format: float }
+        productosConsultados:
+          type: array
+          items:
+            type: object
+            properties:
+              producto_id: { type: integer }
+              producto_nombre: { type: string }
+              consultas: { type: integer }
+        tiempoPromedio:
+          type: number
+          format: float
+          example: 42.35
+
+    Interaccion:
+      type: object
+      properties:
+        id:
+          type: integer
+        usuario_id:
+          type: integer
+        tipo:
+          type: string
+          example: consulta_producto
+        producto_id:
+          type: integer
+        producto_nombre:
+          type: string
+        duracion_segundos:
+          type: number
+          format: float
+        fecha:
+          type: string
+          format: date-time
+
+    ReporteResponse:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [ventas, interacciones]
+        filtros:
+          type: object
+        total:
+          type: integer
+        datos:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Compra'
+              - $ref: '#/components/schemas/Interaccion'
