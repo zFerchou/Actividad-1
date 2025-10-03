@@ -65,7 +65,8 @@ app.use((req, res) => {
       '/dashboard',
       '/geoloc',
       '/docs',
-      '/health'
+      '/health',
+      '/login'
     ]
   });
 });

@@ -5,6 +5,7 @@ const config = require('../config');
 const router = express.Router();
 const pool = require('../database/db');
 const authController = require('../controllers/authController');
+const authMiddleware = require('../middleware/auth');
 
 // --- 2FA: almacenamiento en memoria ---
 const codigos2FA = new Map(); // userId -> { codigo, expiresAt }
@@ -124,6 +125,14 @@ router.post('/forgot-username', authController.forgotUsername);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.get('/verify-token/:token', authController.verifyToken);
+
+// Endpoint auxiliar: devuelve el usuario del token (debug)
+router.get('/me', authMiddleware, (req, res) => {
+  return res.json({
+    success: true,
+    user: req.user
+  });
+});
 
 // Exportar router y codigos2FA
 module.exports = router;
