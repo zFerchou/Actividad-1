@@ -31,9 +31,8 @@ class Usuario {
   return res.rows[0];
 }
 
-// ------------------------
 // Obtener usuario por token válido
-// ------------------------
+
 static async obtenerPorToken(token) {
   const query = `
     SELECT * 
@@ -46,9 +45,9 @@ static async obtenerPorToken(token) {
 }
 
 
-  // ------------------------
+ 
   // Actualizar contraseña y limpiar token
-  // ------------------------
+
   static async actualizarPassword(id, newPassword) {
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     const res = await pool.query(

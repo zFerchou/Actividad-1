@@ -1,9 +1,14 @@
+// controllers/authController.js
 const Usuario = require('../models/Usuario');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const config = require('../config'); // <-- Clave JWT centralizada
 require('dotenv').config();
 
-// Configuración de correo
+
+// CONFIGURACIÓN DE CORREO
+
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE || 'Gmail',
   auth: {
@@ -12,16 +17,18 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ------------------------
-// Recuperar nombre de usuario
-// ------------------------
+
+// RECUPERAR NOMBRE DE USUARIO
+
 exports.forgotUsername = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Correo requerido' });
+    if (!email)
+      return res.status(400).json({ success: false, message: 'Correo requerido' });
 
     const usuario = await Usuario.obtenerPorEmail(email);
-    if (!usuario) return res.status(404).json({ success: false, message: 'No se encontró una cuenta con ese correo' });
+    if (!usuario)
+      return res.status(404).json({ success: false, message: 'No se encontró una cuenta con ese correo' });
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
@@ -38,16 +45,18 @@ exports.forgotUsername = async (req, res) => {
   }
 };
 
-// ------------------------
-// Recuperar contraseña
-// ------------------------
+
+// RECUPERAR CONTRASEÑA
+
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Correo requerido' });
+    if (!email)
+      return res.status(400).json({ success: false, message: 'Correo requerido' });
 
     const usuario = await Usuario.obtenerPorEmail(email);
     if (!usuario) {
+      // Por seguridad, no revelar si el email existe o no
       return res.json({ success: true, message: 'Si el correo existe, se ha enviado un enlace de recuperación' });
     }
 
@@ -71,18 +80,23 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// Restablecer contraseña
+
+// RESTABLECER CONTRASEÑA
+
 exports.resetPassword = async (req, res) => {
   try {
     const token = (req.body.token || req.query.token || '').trim();
     const { newPassword } = req.body;
 
-    if (!token || !newPassword) return res.status(400).json({ success: false, message: 'Token y nueva contraseña son requeridos' });
-    if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres' });
+    if (!token || !newPassword)
+      return res.status(400).json({ success: false, message: 'Token y nueva contraseña son requeridos' });
+    if (newPassword.length < 6)
+      return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 6 caracteres' });
 
-    const decodedToken = decodeURIComponent(token);  // <-- DECODIFICAR
+    const decodedToken = decodeURIComponent(token);
     const usuario = await Usuario.obtenerPorToken(decodedToken);
-    if (!usuario) return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+    if (!usuario)
+      return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
 
     await Usuario.actualizarPassword(usuario.id, newPassword);
     res.json({ success: true, message: 'Contraseña restablecida exitosamente' });
@@ -92,21 +106,50 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// Verificar token
+
+// VERIFICAR TOKEN (JWT o RECUPERACIÓN)
+
 exports.verifyToken = async (req, res) => {
   try {
     const token = (req.params.token || req.body.token || '').trim();
-    if (!token) return res.status(400).json({ success: false, message: 'No hay token para verificar' });
+    if (!token)
+      return res.status(400).json({ success: false, message: 'No hay token para verificar' });
 
-    console.log('Token recibido en verifyToken:', token);
+    console.log('🔹 Token recibido en verifyToken:', token);
 
-    const decodedToken = decodeURIComponent(token);  // <-- DECODIFICAR
+    // 1️⃣ Intentar verificar como JWT (3 segmentos)
+    if (token.split('.').length === 3) {
+      try {
+        const decoded = jwt.verify(token, config.jwtSecret);
+        console.log('✅ Token JWT válido:', decoded);
+
+        return res.json({
+          success: true,
+          message: 'Token válido (JWT)',
+          email: decoded.email || null,
+          userId: decoded.userId || null,
+          rol: decoded.rol || null,
+          exp: decoded.exp || null
+        });
+      } catch (err) {
+        const msg = err.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido';
+        return res.status(400).json({ success: false, message: msg });
+      }
+    }
+
+    // 2️⃣ Si no es JWT, probar como token de recuperación
+    const decodedToken = decodeURIComponent(token);
     const usuario = await Usuario.obtenerPorToken(decodedToken);
-    console.log('Usuario encontrado:', usuario);
+    console.log('🔍 Usuario encontrado por token de recuperación:', usuario);
 
-    if (!usuario) return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+    if (!usuario)
+      return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
 
-    res.json({ success: true, message: 'Token válido', email: usuario.email });
+    res.json({
+      success: true,
+      message: 'Token de recuperación válido',
+      email: usuario.email
+    });
   } catch (error) {
     console.error('Error verifyToken:', error);
     res.status(500).json({ success: false, message: 'Error al verificar el token' });
