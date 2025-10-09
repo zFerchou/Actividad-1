@@ -8,7 +8,8 @@ const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/auth');
 
 // --- 2FA: almacenamiento en memoria ---
-const codigos2FA = new Map(); // userId -> { codigo, expiresAt }
+// Se almacena por email para no exponer ni requerir el ID del usuario en el paso 2
+const codigos2FA = new Map(); // email -> { codigo, expiresAt }
 
 // Ruta POST /auth/login
 router.post('/login', async (req, res) => {
@@ -37,10 +38,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // 3. Generar código temporal 2FA (6 dígitos)
+  // 3. Generar código temporal 2FA (6 dígitos)
     const codigo2FA = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutos
-    codigos2FA.set(user.id, { codigo: codigo2FA, expiresAt });
+  codigos2FA.set(user.email, { codigo: codigo2FA, expiresAt });
 
     // 4. Enviar código por correo
     try {
@@ -55,7 +56,7 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       require2FA: true,
-      userId: user.id,
+      userId: user.id, // mantenemos por compatibilidad, pero no será requerido en verify-2fa
       email: user.email,
       nombre: user.nombre
     });
@@ -66,30 +67,30 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Endpoint para validar código 2FA
+// Endpoint para validar código 2FA (ahora usa email en lugar de userId)
 router.post('/verify-2fa', async (req, res) => {
   try {
-    const { userId, codigo } = req.body;
-    if (!userId || !codigo) {
+    const { email, codigo } = req.body;
+    if (!email || !codigo) {
       return res.status(400).json({ error: 'Faltan datos' });
     }
-    const registro = codigos2FA.get(userId);
+    const registro = codigos2FA.get(email);
     if (!registro) {
-      return res.status(400).json({ error: 'No se solicitó código 2FA para este usuario' });
+      return res.status(400).json({ error: 'No se solicitó código 2FA para este correo' });
     }
     if (registro.expiresAt < Date.now()) {
-      codigos2FA.delete(userId);
+      codigos2FA.delete(email);
       return res.status(400).json({ error: 'El código ha expirado' });
     }
     if (registro.codigo !== codigo) {
       return res.status(401).json({ error: 'Código incorrecto' });
     }
     // Código correcto, eliminarlo para que no se reutilice
-    codigos2FA.delete(userId);
+    codigos2FA.delete(email);
     // Buscar usuario para generar token
     const result = await pool.query(
-      'SELECT id, nombre, email, rol FROM usuarios WHERE id = $1',
-      [userId]
+      'SELECT id, nombre, email, rol FROM usuarios WHERE email = $1',
+      [email]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -108,7 +109,8 @@ router.post('/verify-2fa', async (req, res) => {
       {
         userId: user.id,
         email: user.email,
-        rol: user.rol
+        rol: user.rol,
+        jti: `${user.id}-${Date.now()}`
       },
       config.jwtSecret,
       { expiresIn: '24h' }
@@ -130,6 +132,16 @@ router.get('/verify-token/:token', authController.verifyToken);
 router.get('/me', authMiddleware, (req, res) => {
   return res.json({
     success: true,
+    user: req.user
+  });
+});
+
+// Acceso "offline": valida un JWT previamente emitido sin requerir reenviar 2FA ahora
+router.get('/offline-login', authMiddleware, (req, res) => {
+  return res.json({
+    success: true,
+    offline: true,
+    message: 'Acceso offline válido con JWT vigente',
     user: req.user
   });
 });

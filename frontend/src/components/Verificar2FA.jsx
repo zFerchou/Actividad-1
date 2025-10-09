@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { authAPI } from '../services/api';
 import './styles/Verificar2FA.css';
 
-const Verificar2FA = ({ userId, email, onSuccess, onError }) => {
+const Verificar2FA = ({ email, onSuccess, onError }) => {
   const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,7 +13,7 @@ const Verificar2FA = ({ userId, email, onSuccess, onError }) => {
     setLoading(true);
     setError('');
     try {
-      const data = await authAPI.verify2FA({ userId, codigo });
+  const data = await authAPI.verify2FA({ email, codigo });
       if (data.success && data.token) {
         onSuccess(data);
       } else {

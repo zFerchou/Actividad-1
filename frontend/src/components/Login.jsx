@@ -14,7 +14,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pending2FA, setPending2FA] = useState(null); // { userId, email }
+  const [pending2FA, setPending2FA] = useState(null); // { email }
   const navigate = useNavigate();
   const online = useOnlineStatus();
 
@@ -41,7 +41,7 @@ const Login = () => {
     try {
       const data = await authAPI.login(credentials);
       if (data.require2FA) {
-        setPending2FA({ userId: data.userId, email: data.email });
+        setPending2FA({ email: data.email });
       } else if (data.token && data.user) {
         authService.setAuthData(data.token, data.user);
         // Enviar ubicación al login si es posible
@@ -65,7 +65,6 @@ const Login = () => {
   if (pending2FA) {
     return (
       <Verificar2FA
-        userId={pending2FA.userId}
         email={pending2FA.email}
         onSuccess={data => {
           authService.setAuthData(data.token, data.user);

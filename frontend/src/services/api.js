@@ -67,10 +67,10 @@ export const authAPI = {
     });
   },
 
-  verify2FA: async ({ userId, codigo }) => {
+  verify2FA: async ({ email, codigo }) => {
     return authFetch('/auth/verify-2fa', {
       method: 'POST',
-      body: JSON.stringify({ userId, codigo }),
+      body: JSON.stringify({ email, codigo }),
     });
   }
 };

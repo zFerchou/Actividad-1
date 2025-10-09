@@ -74,7 +74,7 @@ paths:
             examples:
               ejemplo:
                 value:
-                  userId: 1
+                  email: usuario@ejemplo.com
                   codigo: "123456"
       responses:
         '200':
@@ -87,7 +87,10 @@ paths:
     get:
       tags: [Autenticación]
       summary: Verificar token (JWT o recuperación)
-      description: Acepta tanto un JWT emitido tras 2FA como un token de recuperación almacenado en BD. Para JWT, valida firma y expiración con el secreto del servidor.
+      description: |
+        Acepta tanto un JWT emitido tras 2FA como un token de recuperación almacenado en BD.
+        - Para JWT, valida firma y expiración con el secreto del servidor.
+        - Seguridad adicional: el token es de un solo uso. Tras una verificación exitosa, el mismo token no puede volver a usarse y devolverá "Token inválido o expirado".
       parameters:
         - in: path
           name: token
@@ -132,6 +135,40 @@ paths:
                 properties:
                   success:
                     type: boolean
+                  user:
+                    type: object
+  /auth/offline-login:
+    get:
+      tags: [Autenticación]
+      summary: Acceso offline con JWT en caché
+      description: Valida un JWT previamente emitido (vigente) sin requerir re-enviar 2FA ahora. Útil cuando no hay Internet para recibir código 2FA: el cliente usa el token almacenado si no ha expirado.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: false
+          schema:
+            type: string
+          description: Encabezado Authorization. Úsalo si no ves el botón "Authorize".
+          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx.yyy
+      responses:
+        '200':
+          description: Acceso offline válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  offline:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Acceso offline válido con JWT vigente
                   user:
                     type: object
         '401':
@@ -388,12 +425,13 @@ components:
     Login2FARequest:
       type: object
       properties:
-        userId:
-          type: integer
+        email:
+          type: string
+          format: email
         codigo:
           type: string
           description: Código de 6 dígitos
-      required: [userId, codigo]
+      required: [email, codigo]
     AuthSuccess:
       type: object
       properties:

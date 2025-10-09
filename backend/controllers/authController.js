@@ -221,7 +221,22 @@ exports.verifyToken = async (req, res) => {
     // Si tiene formato JWT (tres segmentos separados por puntos), intenta verificarlo
     if (token.split('.').length === 3) {
       try {
+        // Verificar firma/exp
         const decoded = jwt.verify(token, config.jwtSecret);
+
+        // Enforce single-use: hash full token and check persistence
+        const crypto = require('crypto');
+        const pool = require('../database/db');
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        const check = await pool.query('SELECT token_hash FROM public.used_tokens WHERE token_hash = $1', [tokenHash]);
+        if (check.rows.length > 0) {
+          return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+        }
+
+        // Mark as used
+        await pool.query('INSERT INTO public.used_tokens(token_hash, token_type) VALUES($1, $2)', [tokenHash, 'jwt']);
+
         return res.json({
           success: true,
           message: 'Token válido (JWT)',
@@ -241,6 +256,16 @@ exports.verifyToken = async (req, res) => {
     if (!usuario) {
       return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
     }
+
+    // Para tokens de recuperación, también podemos hacerlos de un solo uso:
+    const crypto = require('crypto');
+    const pool = require('../database/db');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const check = await pool.query('SELECT token_hash FROM public.used_tokens WHERE token_hash = $1', [tokenHash]);
+    if (check.rows.length > 0) {
+      return res.status(400).json({ success: false, message: 'Token inválido o expirado' });
+    }
+    await pool.query('INSERT INTO public.used_tokens(token_hash, token_type) VALUES($1, $2)', [tokenHash, 'recovery']);
 
     return res.json({ success: true, message: 'Token válido (recuperación)', email: usuario.email });
 
