@@ -24,23 +24,76 @@ tags:
     description: Reportes de ventas e interacciones
   - name: Geolocalización
     description: Endpoints para guardar y consultar ubicaciones del usuario
+  - name: Usuarios
+    description: Endpoints para gestión de usuarios
 
 paths:
+  # --------------------
+  # USUARIOS
+  # --------------------
   /usuarios:
     get:
-      summary: Lista de usuarios
+      tags: [Usuarios]
+      summary: Listar todos los usuarios
+      description: Devuelve la lista completa de usuarios registrados.
       responses:
         '200':
-          description: Respuesta exitosa
+          description: Lista de usuarios obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+    post:
+      tags: [Usuarios]
+      summary: Crear un nuevo usuario
+      description: Crea un usuario con los datos proporcionados.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              ejemplo:
+                value:
+                  nombre: Juan Pérez
+                  email: usuario@ejemplo.com
+                  password: MiSecreta123
+                  rol: user
+                  telefono: '5551234567'
+                  direccion: Calle Falsa 123
+      responses:
+        '200':
+          description: Usuario creado exitosamente
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  mensaje:
                     type: string
-                    example: Hola, mundo!
+                    example: Usuario creado
+                  usuario:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Error de validación (email duplicado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  # --------------------
+  # AUTENTICACIÓN
+  # --------------------
   /auth/login:
     post:
       tags: [Autenticación]
@@ -241,6 +294,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # --------------------
+  # HISTORIAL
+  # --------------------
   /historial/{usuarioId}:
     get:
       tags: [Historial]
@@ -290,6 +346,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/HistorialResponse'
 
+  # --------------------
+  # REPORTES / DASHBOARD
+  # --------------------
   /dashboard/estadisticas:
     get:
       tags: [Reportes]
@@ -367,6 +426,9 @@ paths:
                 type: string
                 format: binary
 
+  # --------------------
+  # GEOLOCALIZACIÓN
+  # --------------------
   /geoloc/login:
     post:
       tags: [Geolocalización]
@@ -473,6 +535,48 @@ components:
       bearerFormat: JWT
 
   schemas:
+    # --------------------
+    # USUARIOS
+    # --------------------
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: usuario@ejemplo.com
+        rol:
+          type: string
+          example: user
+
+    CreateUserRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        rol:
+          type: string
+        telefono:
+          type: string
+        direccion:
+          type: string
+      required: [nombre, email, password, rol]
+
+    # --------------------
+    # AUTENTICACIÓN
+    # --------------------
     LoginRequest:
       type: object
       properties:
@@ -533,23 +637,6 @@ components:
           format: email
           example: usuario@ejemplo.com
 
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 1
-        nombre:
-          type: string
-          example: Juan Pérez
-        email:
-          type: string
-          format: email
-          example: usuario@ejemplo.com
-        rol:
-          type: string
-          example: user
-
     ErrorResponse:
       type: object
       properties:
@@ -567,6 +654,9 @@ components:
           type: string
           example: Operación completada correctamente
 
+    # --------------------
+    # GEOLOCALIZACIÓN
+    # --------------------
     GeoInput:
       type: object
       properties:
@@ -613,6 +703,9 @@ components:
           type: string
           format: date-time
 
+    # --------------------
+    # HISTORIAL
+    # --------------------
     HistorialResponse:
       type: object
       properties:
@@ -630,70 +723,38 @@ components:
       properties:
         id:
           type: integer
-        producto_id:
-          type: integer
-        producto_nombre:
+        producto:
           type: string
-        cantidad:
-          type: integer
-        precio_unitario:
+        monto:
           type: number
           format: float
-        total:
-          type: number
-          format: float
-        estado:
-          type: string
-          example: completado
-        tipo_producto:
-          type: string
         fecha:
           type: string
           format: date-time
+        estado:
+          type: string
 
+    # --------------------
+    # REPORTES / DASHBOARD
+    # --------------------
     EstadisticasResponse:
       type: object
       properties:
-        ventasPorProducto:
-          type: array
-          items:
-            type: object
-            properties:
-              producto_id: { type: integer }
-              producto_nombre: { type: string }
-              sucursal: { type: string }
-              unidades: { type: integer }
-              ventas: { type: number, format: float }
-        productosConsultados:
-          type: array
-          items:
-            type: object
-            properties:
-              producto_id: { type: integer }
-              producto_nombre: { type: string }
-              consultas: { type: integer }
-        tiempoPromedio:
+        usuariosActivos:
+          type: integer
+        ventasTotales:
           type: number
           format: float
-          example: 42.35
+        interaccionesRecientes:
+          type: integer
 
     Interaccion:
       type: object
       properties:
-        id:
+        usuarioId:
           type: integer
-        usuario_id:
-          type: integer
-        tipo:
+        accion:
           type: string
-          example: consulta_producto
-        producto_id:
-          type: integer
-        producto_nombre:
-          type: string
-        duracion_segundos:
-          type: number
-          format: float
         fecha:
           type: string
           format: date-time
@@ -704,13 +765,7 @@ components:
         tipo:
           type: string
           enum: [ventas, interacciones]
-        filtros:
-          type: object
-        total:
-          type: integer
         datos:
           type: array
           items:
-            oneOf:
-              - $ref: '#/components/schemas/Compra'
-              - $ref: '#/components/schemas/Interaccion'
+            type: object
